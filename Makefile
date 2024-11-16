@@ -14,6 +14,8 @@ NAME = minishell
 
 CC = cc
 
+CFLAGS = -Wall -Wextra -Werror -I$(LIBFT_DIR)
+
 SRCS = minishell.c \
        input.c \
        parser.c \
@@ -21,19 +23,29 @@ SRCS = minishell.c \
        utils.c \
        builtins.c \
 
-OBJS = $(SRCS:.c=.o)
+# Libft directory and library
+LIBFT_DIR = ./libft
+LIBFT = -L$(LIBFT_DIR) -lft
 
-CFLAGS = -Wall -Wextra -Werror
+OBJS = $(SRCS:.c=.o)
 
 all: $(NAME)
 
-$(NAME): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
+$(NAME): $(OBJS) $(LIBFT_DIR)/libft.a
+	$(CC) $(CFLAGS) $(OBJS) $(LIBFT) -o $(NAME)
+
+$(LIBFT_DIR)/libft.a:
+	@echo "Making Libft...."
+	$(MAKE) -C $(LIBFT_DIR)
 
 clean:
 	rm -f $(OBJS)
+	$(MAKE) -sC $(LIBFT_DIR) clean
+
 fclean: clean
 	rm -f $(NAME)
+	$(MAKE) -sC $(LIBFT_DIR) fclean
+
 re: flcean all
 
 .PHONY: all clean fclean re
