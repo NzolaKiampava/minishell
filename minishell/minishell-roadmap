@@ -1,0 +1,41 @@
+
+    Configuração Inicial:
+        Crie a estrutura de diretórios conforme mostrado
+        Configure seu libft
+        Implemente os arquivos header e Makefile
+    Primeira Fase - Básico:
+        Comece implementando o main.c com um loop básico que:
+            Mostra o prompt
+            Lê input usando readline
+            Adiciona à história
+        Implemente o manipulador de sinais básico (CTRL+C, CTRL+D)
+    Segunda Fase - Parser:
+        Implemente o tokenizador (splitting por espaços e operadores)
+        Implemente o parser básico (converter tokens em comandos)
+        Adicione suporte para aspas simples e duplas
+    Terceira Fase - Execução0:
+        Implemente a execução básica de comandos usando execve
+        Adicione suporte para PATH
+        Implemente os builtins um por um (comece com os mais simples como echo e pwd)
+    Quarta Fase - Redirecionamentos e Pipes:
+        Implemente redirecionamentos básicos (< e >)
+        Adicione suporte para pipes
+        Implemente redirecionamentos avançados (<< e >>)
+    Quinta Fase - Variáveis de Ambiente e Expansão:
+        Implemente o gerenciamento de variáveis de ambiente
+        Adicione suporte para expansão de variáveis ($VAR)
+        Implemente $?
+    Fase Final - Polimento:
+        Trate todos os erros possíveis
+        Verifique vazamentos de memória
+        Teste casos extremos
+        Adicione os bônus se desejar
+
+Dicas importantes:
+
+    Use ferramentas como valgrind para verificar vazamentos
+    Teste cada funcionalidade extensivamente antes de passar para a próxima
+    Mantenha um histórico de casos de teste que você descobriu que quebram seu shell
+    Compare sempre o comportamento com o bash
+    Documente seu código à medida que avança
+
