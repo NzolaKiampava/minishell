@@ -75,6 +75,84 @@ static int add_argument(t_command *cmd, char *arg)
     return (1);
 }
 
+static char *get_heredoc_content(char *delimiter)
+{
+    char    *line;
+    char    *content;
+    char    *temp;
+
+    content = ft_strdup("");
+    while (1)
+    {
+        line = readline("> ");
+        if (!line)
+            break;
+        
+        if (ft_strcmp(line, delimiter) == 0)
+        {
+            free(line);
+            break;
+        }
+
+        temp = content;
+        content = ft_strjoin(content, line);
+        free(temp);
+        
+        temp = content;
+        content = ft_strjoin(content, "\n");
+        free(temp);
+        
+        free(line);
+    }
+    return (content);
+}
+
+static int create_heredoc_file(char *content)
+{
+    int     fd;
+    char    *temp_filename;
+    static  int heredoc_count = 0;
+
+    temp_filename = ft_strjoin("/tmp/heredoc_", ft_itoa(heredoc_count++));
+    fd = open(temp_filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0)
+    {
+        free(temp_filename);
+        return (-1);
+    }
+
+    write(fd, content, ft_strlen(content));
+    close(fd);
+
+    fd = open(temp_filename, O_RDONLY);
+    unlink(temp_filename);  // Delete the file but keep it open
+    free(temp_filename);
+    
+    return (fd);
+}
+
+int handle_heredoc(t_command *cmd, char *delimiter)
+{
+    char    *content;
+    int     fd;
+
+    content = get_heredoc_content(delimiter);
+    if (!content)
+        return (-1);
+
+    fd = create_heredoc_file(content);
+    free(content);
+
+    if (fd < 0)
+        return (-1);
+
+    if (cmd->input_fd != STDIN_FILENO)
+        close(cmd->input_fd);
+    cmd->input_fd = fd;
+
+    return (0);
+}
+
 static int handle_redirect(t_command *cmd, t_token **token)
 {
     t_token_type type;
