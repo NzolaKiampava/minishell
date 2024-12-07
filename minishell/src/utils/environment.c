@@ -12,127 +12,108 @@
 
 #include "minishell.h"
 
-// Count the number of environment variables
-static int count_env_vars(char **env) {
-    int count = 0;
-    if (!env) return 0;
-    
-    while (env[count]) {
-        count++;
-    }
-    return count;
-}
-
-// Initialize environment variables
-char **init_env(char **env) {
-    int count;
+char **init_env(char **env)
+{
     char **new_env;
     int i;
+    int size;
 
-    // Count existing environment variables
-    count = count_env_vars(env);
+    size = 0;
+    while (env[size])
+        size++;
 
-    // Allocate memory for new environment array (add 1 for NULL terminator)
-    new_env = malloc((count + 1) * sizeof(char *));
-    if (!new_env) {
-        print_error("Memory allocation failed for environment");
-        return NULL;
-    }
+    new_env = (char **)malloc(sizeof(char *) * (size + 1));
+    if (!new_env)
+        return (NULL);
 
-    // Copy environment variables
-    for (i = 0; i < count; i++) {
+    i = 0;
+    while (i < size)
+    {
         new_env[i] = ft_strdup(env[i]);
-        if (!new_env[i]) {
-            // Free previously allocated memory if strdup fails
-            while (i > 0) {
-                free(new_env[--i]);
-            }
+        if (!new_env[i])
+        {
+            while (--i >= 0)
+                free(new_env[i]);
             free(new_env);
-            print_error("Memory allocation failed for environment variable");
-            return NULL;
+            return (NULL);
         }
+        i++;
     }
-
-    // Null-terminate the array
-    new_env[count] = NULL;
-
-    return new_env;
+    new_env[i] = NULL;
+    return (new_env);
 }
 
-// Get value of an environment variable
-
-char *get_env_value(char **env, char *key) {
+char *get_env_value(char **env, char *key)
+{
     int i;
     int key_len;
 
-    if (!env || !key) return NULL;
+    if (!env || !key)
+        return (NULL);
 
     key_len = ft_strlen(key);
-
-    for (i = 0; env[i]; i++) {
-        // Check if the environment variable starts with the key
-        // and is followed by '='
-        if (ft_strncmp(env[i], key, key_len) == 0 && 
-            env[i][key_len] == '=') {
-            // Return the value after the '='
-            return ft_strdup(env[i] + key_len + 1);
-        }
+    i = 0;
+    while (env[i])
+    {
+        if (ft_strncmp(env[i], key, key_len) == 0 && env[i][key_len] == '=')
+            return (env[i] + key_len + 1);
+        i++;
     }
-
-    return NULL;
+    return (NULL);
 }
 
-
-// Set or update an environment variable
-int set_env_value(char ***env, char *key, char *value) {
-    int i, count;
+int set_env_value(char ***env, char *key, char *value)
+{
     char *new_var;
     char **new_env;
-
-    // Validate inputs
-    if (!env || !key || !value) return -1;
+    int i;
+    int size;
 
     // Create new environment variable string
-    new_var = ft_strjoin_three(key, "=", value);
-    if (!new_var) {
-        print_error("Memory allocation failed");
-        return -1;
-    }
+    new_var = ft_strjoin(key, "=");
+    if (!new_var)
+        return (0);
+    new_var = ft_strjoin_free(new_var, value);
+    if (!new_var)
+        return (0);
 
-    // Count existing environment variables
-    count = count_env_vars(*env);
+    // Count current environment size
+    size = 0;
+    while ((*env)[size])
+        size++;
 
-    // Check if key already exists
-    for (i = 0; (*env)[i]; i++) {
-        if (ft_strncmp((*env)[i], key, ft_strlen(key)) == 0 && 
-            (*env)[i][ft_strlen(key)] == '=') {
-            // Replace existing variable
-            free((*env)[i]);
-            (*env)[i] = new_var;
-            return 0;
-        }
-    }
-
-    // If key doesn't exist, create new environment array
-    new_env = malloc((count + 2) * sizeof(char *));
-    if (!new_env) {
+    // Allocate new environment array
+    new_env = (char **)malloc(sizeof(char *) * (size + 2));
+    if (!new_env)
+    {
         free(new_var);
-        print_error("Memory allocation failed");
-        return -1;
+        return (0);
     }
 
-    // Copy existing environment
-    for (i = 0; i < count; i++) {
-        new_env[i] = (*env)[i];
+    // Copy existing variables and add new one
+    i = 0;
+    while ((*env)[i])
+    {
+        new_env[i] = ft_strdup((*env)[i]);
+        if (!new_env[i])
+        {
+            while (--i >= 0)
+                free(new_env[i]);
+            free(new_env);
+            free(new_var);
+            return (0);
+        }
+        i++;
     }
+    new_env[i] = new_var;
+    new_env[i + 1] = NULL;
 
-    // Add new variable
-    new_env[count] = new_var;
-    new_env[count + 1] = NULL;
-
-    // Free old environment array and update pointer
+    // Free old environment and update pointer
+    i = 0;
+    while ((*env)[i])
+        free((*env)[i++]);
     free(*env);
     *env = new_env;
 
-    return 0;
+    return (1);
 }
