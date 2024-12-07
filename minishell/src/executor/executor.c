@@ -12,152 +12,110 @@
 
 #include "minishell.h"
 
-static int count_commands(t_command *cmd)
-{
-    int count;
-    t_command *current;
-
-    count = 0;
-    current = cmd;
-    while (current)
-    {
-        count++;
-        current = current->next;
-    }
-    return (count);
-}
-
-static void cleanup_command(t_command *cmd)
-{
-    if (cmd->input_fd != STDIN_FILENO)
-        close(cmd->input_fd);
-    if (cmd->output_fd != STDOUT_FILENO)
-        close(cmd->output_fd);
-}
-
-static int execute_single_command(t_command *cmd, t_shell *shell)
-{
-    pid_t   pid;
-    int     status;
-    char    *path;
-
-    // Handle builtin commands
-    if (cmd->args && is_builtin(cmd->args[0]))
-        return (execute_builtin(cmd, shell));
-
-    pid = fork();
-    if (pid < 0)
-        return (EXIT_FAILURE);
-
-    if (pid == 0)
-    {
-        // Child process
-        if (handle_redirections(cmd) != 0)
-            exit(EXIT_FAILURE);
-
-        if (!cmd->args || !cmd->args[0])
-            exit(EXIT_SUCCESS);
-
-        path = ft_strjoin("/bin/", cmd->args[0]);
-        if (execve(path, cmd->args, shell->env) < 0)
-        {
-            free(path);
-            path = ft_strjoin("/usr/bin/", cmd->args[0]);
-            if (execve(path, cmd->args, shell->env) < 0)
-            {
-                free(path);
-                print_error("command not found");
-                exit(127);
-            }
-        }
-        free(path);
-        exit(EXIT_FAILURE);
-    }
-    else
-    {
-        // Parent process
-        waitpid(pid, &status, 0);
-        if (WIFEXITED(status))
-            return (WEXITSTATUS(status));
-        return (EXIT_FAILURE);
-    }
-}
-
-int execute_commands(t_shell *shell)
-{
-    int cmd_count;
-    t_command *current;
-
-    if (!shell || !shell->commands)
-        return (EXIT_FAILURE);
-
-    // Expand variables in all commands
-    current = shell->commands;
-    while (current)
-    {
-        expand_variables(current, shell);
-        current = current->next;
-    }
-
-    cmd_count = count_commands(shell->commands);
-
-    // If we have multiple commands, use pipe handler
-    if (cmd_count > 1)
-        return (handle_pipes(shell->commands, shell));
-
-    // For single command, execute directly
-    shell->exit_status = execute_single_command(shell->commands, shell);
-    cleanup_command(shell->commands);
-    return (shell->exit_status);
-}
-
-static char *get_command_path(char *cmd)
+char *find_command_path(char *cmd, char **env)
 {
     char *path;
+    char **paths;
     char *full_path;
-    struct stat s;
+    char *temp;
+    int i;
 
-    // First try direct path
-    if (stat(cmd, &s) == 0)
+    if (ft_strchr(cmd, '/'))
         return (ft_strdup(cmd));
 
-    // Try /bin/
-    path = ft_strjoin("/bin/", cmd);
-    if (stat(path, &s) == 0)
-        return (path);
-    free(path);
+    path = get_env_value(env, "PATH");
+    if (!path)
+        return (NULL);
 
-    // Try /usr/bin/
-    path = ft_strjoin("/usr/bin/", cmd);
-    if (stat(path, &s) == 0)
-        return (path);
-    free(path);
+    paths = ft_split(path, ':');
+    if (!paths)
+        return (NULL);
 
+    i = 0;
+    while (paths[i])
+    {
+        temp = ft_strjoin(paths[i], "/");
+        full_path = ft_strjoin(temp, cmd);
+        free(temp);
+
+        if (access(full_path, X_OK) == 0)
+        {
+            i = 0;
+            while (paths[i])
+                free(paths[i++]);
+            free(paths);
+            return (full_path);
+        }
+        free(full_path);
+        i++;
+    }
+
+    i = 0;
+    while (paths[i])
+        free(paths[i++]);
+    free(paths);
     return (NULL);
 }
 
-int execute_external_command(char **args, char **envp)
+static int execute_external_command(t_command *cmd, t_shell *shell)
 {
     char *cmd_path;
+    pid_t pid;
+    int status;
 
-    if (!args || !args[0])
-        return (EXIT_FAILURE);
+    if (!cmd->args || !cmd->args[0])
+        return (0);
 
-    cmd_path = get_command_path(args[0]);
+    cmd_path = find_command_path(cmd->args[0], shell->env);
     if (!cmd_path)
     {
         print_error("command not found");
         return (127);
     }
 
-    if (execve(cmd_path, args, envp) < 0)
+    pid = fork();
+    if (pid == 0)
     {
-        free(cmd_path);
+        if (handle_redirections(cmd) != 0)
+            exit(1);
+        
+        execve(cmd_path, cmd->args, shell->env);
         print_error("execution failed");
-        return (EXIT_FAILURE);
+        exit(1);
+    }
+    else if (pid < 0)
+    {
+        print_error("fork failed");
+        free(cmd_path);
+        return (1);
     }
 
-    // Should never reach here
     free(cmd_path);
-    return (EXIT_FAILURE);
+    waitpid(pid, &status, 0);
+    
+    if (WIFEXITED(status))
+        return (WEXITSTATUS(status));
+    return (1);
+}
+
+int execute_commands(t_shell *shell)
+{
+    t_command *cmd;
+    int exit_status;
+
+    cmd = shell->commands;
+    if (!cmd)
+        return (0);
+
+    // Se houver mais de um comando, use pipes
+    if (cmd->next)
+        return (handle_pipes(cmd, shell));
+
+    // Se for um built-in, execute-o
+    if (is_builtin(cmd->args[0]))
+        return (execute_builtin(cmd, shell));
+
+    // Caso contrário, execute como comando externo
+    exit_status = execute_external_command(cmd, shell);
+    return (exit_status);
 }
