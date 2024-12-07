@@ -12,10 +12,10 @@
 
 #include "minishell.h"
 
-// Global variable for signal handling
 int g_signal_received = 0;
 
-void init_shell(t_shell *shell, char **env) {
+static void initialize_shell(t_shell *shell, char **env)
+{
     shell->env = init_env(env);
     shell->commands = NULL;
     shell->tokens = NULL;
@@ -23,50 +23,60 @@ void init_shell(t_shell *shell, char **env) {
     shell->running = 1;
 }
 
-void handle_input(t_shell *shell, char *input) {
-    if (input == NULL) {
-        // Handle CTRL+D (EOF)
+static void process_input(t_shell *shell, char *input)
+{
+    if (!input)
+    {
+        // Handle Ctrl+D (EOF)
+        printf("exit\n");
         shell->running = 0;
-        printf("\n");
         return;
     }
 
-    // Only add non-empty inputs to history
-    if (input && *input) {
+    if (strlen(input) > 0)
+    {
         add_history(input);
+        shell->tokens = tokenize_input(input);
+        
+        if (shell->tokens)
+        {
+            shell->commands = parse_tokens(shell->tokens);
+            if (shell->commands)
+            {
+                expand_variables(shell->commands, shell);
+                shell->exit_status = execute_commands(shell);
+            }
+            free_commands(shell->commands);
+            shell->commands = NULL;
+        }
+        free_tokens(shell->tokens);
+        shell->tokens = NULL;
     }
-
-    // TODO: Implement tokenization, parsing, and execution
-    // For now, just print the input
-    printf("Received: %s\n", input);
-
-    // Free the input
     free(input);
 }
 
-int main(int argc __attribute__((unused)), char **argv __attribute__((unused)), char **env) {
+int main(int argc, char **argv, char **env)
+{
     t_shell shell;
+    char *input;
+
+    (void)argc;
+    (void)argv;
 
     // Initialize shell
-    init_shell(&shell, env);
-
-    // Setup signal handling
+    initialize_shell(&shell, env);
+    
+    // Setup signal handlers
     setup_signals();
 
     // Main shell loop
-    while (shell.running) {
-        // Reset global signal flag
-        g_signal_received = 0;
-
-        // Display prompt
-        char *input = readline("minishell$ ");
-
-        // Handle input
-        handle_input(&shell, input);
+    while (shell.running)
+    {
+        input = readline("minishell$ ");
+        process_input(&shell, input);
     }
 
     // Cleanup
     free_shell(&shell);
-
-    return shell.exit_status;
+    return (shell.exit_status);
 }
