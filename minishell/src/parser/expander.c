@@ -12,100 +12,75 @@
 
 #include "minishell.h"
 
-static int is_variable_char(char c)
-{
-    return (ft_isalnum(c) || c == '_');
-}
-
-static char *get_variable_name(char *str)
-{
-    int     i;
-    char    *name;
-
-    i = 0;
-    while (str[i] && is_variable_char(str[i]))
-        i++;
-    
-    name = (char *)malloc(sizeof(char) * (i + 1));
-    if (!name)
-        return (NULL);
-    ft_strlcpy(name, str, i + 1);
-    return (name);
-}
-
-static char *expand_exit_status(t_shell *shell)
-{
-    return (ft_itoa(shell->exit_status));
-}
-
-static char *handle_special_var(char c, t_shell *shell)
-{
-    if (c == '?')
-        return expand_exit_status(shell);
-    // Add other special variables here if needed ($0, $1, etc.)
-    return (ft_strdup(""));
-}
-
 static char *expand_single_var(char *str, int *i, t_shell *shell)
 {
+    int start;
+    int len;
     char *var_name;
     char *var_value;
-    
-    (*i)++;  // Skip the $
-    
-    // Handle special variables ($?, $0, etc.)
-    if (!is_variable_char(str[*i]))
+    char *result;
+
+    (*i)++; // Skip the '$'
+    start = *i;
+    len = 0;
+
+    // Handle special case $?
+    if (str[*i] == '?')
     {
-        char *value = handle_special_var(str[*i], shell);
-        if (str[*i])
-            (*i)++;
-        return value;
+        (*i)++;
+        return (ft_itoa(shell->exit_status));
     }
 
-    // Handle regular variables
-    var_name = get_variable_name(str + *i);
+    // Get variable name
+    while (str[*i + len] && (ft_isalnum(str[*i + len]) || str[*i + len] == '_'))
+        len++;
+    
+    if (len == 0)
+        return (ft_strdup("$"));
+
+    *i += len;
+    var_name = ft_substr(str, start, len);
     if (!var_name)
         return (NULL);
-
-    while (str[*i] && is_variable_char(str[*i]))
-        (*i)++;
 
     var_value = get_env_value(shell->env, var_name);
     free(var_name);
 
-    return (var_value ? ft_strdup(var_value) : ft_strdup(""));
+    result = var_value ? ft_strdup(var_value) : ft_strdup("");
+    return (result);
 }
 
-static char *expand_variables_in_str(char *str, t_shell *shell)
+static char *expand_string(char *str, t_shell *shell)
 {
-    int     i;
-    char    *result;
-    char    *temp;
-    char    *var_value;
-    int     in_single_quotes;
+    int i;
+    char *result;
+    char *temp;
+    char *var;
+    char quote;
 
     result = ft_strdup("");
     i = 0;
-    in_single_quotes = 0;
+    quote = 0;
 
     while (str[i])
     {
-        if (str[i] == '\'')
-            in_single_quotes = !in_single_quotes;
-        
-        if (str[i] == '$' && !in_single_quotes)
+        if (!quote && (str[i] == '\'' || str[i] == '"'))
+            quote = str[i];
+        else if (quote && str[i] == quote)
+            quote = 0;
+        else if (str[i] == '$' && quote != '\'')
         {
-            var_value = expand_single_var(str, &i, shell);
-            temp = result;
-            result = ft_strjoin(result, var_value);
-            free(temp);
-            free(var_value);
+            var = expand_single_var(str, &i, shell);
+            temp = ft_strjoin(result, var);
+            free(result);
+            free(var);
+            result = temp;
             continue;
         }
 
-        temp = result;
-        result = ft_strjoin_char(result, str[i]);
-        free(temp);
+        temp = ft_charjoin(result, str[i]);
+        free(result);
+        result = temp;
         i++;
     }
 
@@ -117,29 +92,34 @@ void expand_variables(t_command *cmd, t_shell *shell)
     int i;
     char *expanded;
 
-    if (!cmd || !cmd->args)
-        return;
-
-    i = 0;
-    while (cmd->args[i])
+    while (cmd)
     {
-        expanded = expand_variables_in_str(cmd->args[i], shell);
-        free(cmd->args[i]);
-        cmd->args[i] = expanded;
-        i++;
-    }
+        if (cmd->args)
+        {
+            i = 0;
+            while (cmd->args[i])
+            {
+                expanded = expand_string(cmd->args[i], shell);
+                free(cmd->args[i]);
+                cmd->args[i] = expanded;
+                i++;
+            }
+        }
 
-    if (cmd->input_file)
-    {
-        expanded = expand_variables_in_str(cmd->input_file, shell);
-        free(cmd->input_file);
-        cmd->input_file = expanded;
-    }
+        if (cmd->input_file)
+        {
+            expanded = expand_string(cmd->input_file, shell);
+            free(cmd->input_file);
+            cmd->input_file = expanded;
+        }
 
-    if (cmd->output_file)
-    {
-        expanded = expand_variables_in_str(cmd->output_file, shell);
-        free(cmd->output_file);
-        cmd->output_file = expanded;
+        if (cmd->output_file)
+        {
+            expanded = expand_string(cmd->output_file, shell);
+            free(cmd->output_file);
+            cmd->output_file = expanded;
+        }
+
+        cmd = cmd->next;
     }
 }
