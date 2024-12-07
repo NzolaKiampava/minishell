@@ -12,96 +12,119 @@
 
 #include "minishell.h"
 
-static void	close_pipes(int *pipe_fds, int pipe_count)
+static void close_pipes(int pipes[][2], int pipe_count)
 {
-    int	i;
+    int i;
 
     i = 0;
-    while (i < pipe_count * 2)
+    while (i < pipe_count)
     {
-        close(pipe_fds[i]);
+        close(pipes[i][0]);
+        close(pipes[i][1]);
         i++;
     }
 }
 
-static void	setup_pipe_child(t_command *cmd, int *pipe_fds, int i, int pipe_count)
+static int setup_pipes(int pipes[][2], int count)
+{
+    int i;
+
+    i = 0;
+    while (i < count)
+    {
+        if (pipe(pipes[i]) < 0)
+        {
+            while (i > 0)
+            {
+                i--;
+                close(pipes[i][0]);
+                close(pipes[i][1]);
+            }
+            return (0);
+        }
+        i++;
+    }
+    return (1);
+}
+
+static void setup_child_pipes(int pipes[][2], int i, int pipe_count)
 {
     if (i > 0) // Not first command
     {
-        dup2(pipe_fds[(i - 1) * 2], STDIN_FILENO);
+        dup2(pipes[i - 1][0], STDIN_FILENO);
     }
+    
     if (i < pipe_count) // Not last command
     {
-        dup2(pipe_fds[i * 2 + 1], STDOUT_FILENO);
+        dup2(pipes[i][1], STDOUT_FILENO);
     }
-    close_pipes(pipe_fds, pipe_count);
+
+    close_pipes(pipes, pipe_count);
 }
 
-int	handle_pipes(t_command *cmd, t_shell *shell)
+int handle_pipes(t_command *cmd, t_shell *shell)
 {
-    int		pipe_count;
-    int		*pipe_fds;
-    int		i;
-    pid_t	pid;
-    t_command	*current;
+    int pipe_count;
+    int pipes[1024][2];
+    t_command *current;
+    pid_t *pids;
+    int i, status, last_status;
 
-    // Count number of pipes needed
+    // Count commands and allocate pid array
     pipe_count = 0;
     current = cmd;
-    while (current->next)
+    while (current->next && pipe_count < 1024)
     {
         pipe_count++;
         current = current->next;
     }
 
-    // Create pipes
-    pipe_fds = malloc(sizeof(int) * (pipe_count * 2));
-    if (!pipe_fds)
+    pids = (pid_t *)malloc(sizeof(pid_t) * (pipe_count + 1));
+    if (!pids || !setup_pipes(pipes, pipe_count))
         return (1);
-    i = 0;
-    while (i < pipe_count)
-    {
-        if (pipe(pipe_fds + (i * 2)) < 0)
-        {
-            free(pipe_fds);
-            return (1);
-        }
-        i++;
-    }
 
     // Execute commands
     i = 0;
     current = cmd;
     while (current)
     {
-        pid = fork();
-        if (pid == 0)
+        pids[i] = fork();
+        if (pids[i] == 0)
         {
-            setup_pipe_child(current, pipe_fds, i, pipe_count);
+            setup_child_pipes(pipes, i, pipe_count);
+            
             if (handle_redirections(current) != 0)
-                exit(EXIT_FAILURE);
+                exit(1);
+
             if (is_builtin(current->args[0]))
                 exit(execute_builtin(current, shell));
-            execvp(current->args[0], current->args);
-            perror("execvp");
-            exit(EXIT_FAILURE);
+            
+            if (!current->args[0])
+                exit(0);
+
+            char *cmd_path = find_command_path(current->args[0], shell->env);
+            if (!cmd_path)
+                exit(127);
+
+            execve(cmd_path, current->args, shell->env);
+            free(cmd_path);
+            exit(1);
         }
         current = current->next;
         i++;
     }
 
-    // Parent process
-    close_pipes(pipe_fds, pipe_count);
-    free(pipe_fds);
+    close_pipes(pipes, pipe_count);
 
-    // Wait for all children
-    while (i-- > 0)
+    // Wait for all children and get last status
+    last_status = 0;
+    for (i = 0; i <= pipe_count; i++)
     {
-        int status;
-        wait(&status);
-        if (WIFEXITED(status))
-            shell->exit_status = WEXITSTATUS(status);
+        waitpid(pids[i], &status, 0);
+        if (i == pipe_count)
+            last_status = WIFEXITED(status) ? WEXITSTATUS(status) : 1;
     }
 
-    return (0);
+    free(pids);
+    return (last_status);
 }
