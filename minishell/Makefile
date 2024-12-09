@@ -12,10 +12,20 @@ OBJ_DIR = obj
 
 # Source files
 SRCS = $(SRCS_DIR)/main.c \
+       $(SRCS_DIR)/builtins/builtin_utils.c \
+       $(SRCS_DIR)/builtins/cd.c \
+       $(SRCS_DIR)/builtins/echo.c \
+       $(SRCS_DIR)/builtins/env.c \
+       $(SRCS_DIR)/builtins/exit.c \
+       $(SRCS_DIR)/builtins/export.c \
+       $(SRCS_DIR)/builtins/pwd.c \
+       $(SRCS_DIR)/builtins/unset.c \
+       $(SRCS_DIR)/executor/executor.c \
        $(SRCS_DIR)/executor/pipe_handler.c \
        $(SRCS_DIR)/executor/redirections.c \
        $(SRCS_DIR)/parser/parser.c \
        $(SRCS_DIR)/parser/tokenizer.c \
+       $(SRCS_DIR)/parser/expander.c \
        $(SRCS_DIR)/signals/signals.c \
        $(SRCS_DIR)/utils/environment.c \
        $(SRCS_DIR)/utils/error_handler.c
