@@ -145,7 +145,6 @@ The shell has been tested with:
 
 - [Bash Reference Manual](https://www.gnu.org/software/bash/manual/bash.html)
 - [Writing Your Own Shell](https://www.geeksforgeeks.org/making-linux-shell-c/)
-- [42 minishell]([https://cdn.intra.42.fr/](https://cdn.intra.42.fr/pdf/pdf/135158/en.subject.pdf))
 
 ## 👥 Contributors
 
