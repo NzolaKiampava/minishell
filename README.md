@@ -2,8 +2,6 @@
 
 A simple shell implementation inspired by bash, developed as part of the 42 School curriculum.
 
-![Project Status](https://img.shields.io/badge/status-completed-success)
-![Score](https://img.shields.io/badge/score-100%2F100-success)
 
 ## 📝 About
 
