@@ -151,7 +151,7 @@ The shell has been tested with:
 
 ## 👥 Contributors
 
-- [Your Name](https://github.com/NzolaKiampava)
+- [Nzola Kiampava](https://github.com/NzolaKiampava)
 
 ## 📝 License
 
