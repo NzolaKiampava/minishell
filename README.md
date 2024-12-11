@@ -33,7 +33,7 @@ Minishell is a simplified shell that implements basic functionality similar to b
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/minishell.git
+git clone https://github.com/NzolaKiampava/minishell.git
 
 # Navigate to the project directory
 cd minishell
