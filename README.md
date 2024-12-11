@@ -40,9 +40,6 @@ git clone https://github.com/yourusername/minishell.git
 # Navigate to the project directory
 cd minishell
 
-# Build libft first
-cd libft && make && cd ..
-
 # Compile the project
 make
 
