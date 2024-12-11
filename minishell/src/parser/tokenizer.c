@@ -1,137 +1,82 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   tokenizer.c                                        :+:      :+:    :+:   */
+/*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: nkiampav <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/12/06 10:17:49 by nkiampav          #+#    #+#             */
-/*   Updated: 2024/12/06 10:17:51 by nkiampav         ###   ########.fr       */
+/*   Created: 2024/11/11 14:09:39 by nkiampav          #+#    #+#             */
+/*   Updated: 2024/11/11 14:16:54 by nkiampav         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
-static int is_space(char c)
+int g_signal_received = 0;
+
+static void initialize_shell(t_shell *shell, char **env)
 {
-    return (c == ' ' || c == '\t' || c == '\n');
+    shell->env = init_env(env);
+    shell->commands = NULL;
+    shell->tokens = NULL;
+    shell->exit_status = 0;
+    shell->running = 1;
 }
 
-static int is_operator(char c)
+static void process_input(t_shell *shell, char *input)
 {
-    return (c == '|' || c == '<' || c == '>');
-}
-
-static int get_operator_type(char *input, int *i)
-{
-    if (input[*i] == '|')
-        return (TOKEN_PIPE);
-    else if (input[*i] == '<')
+    if (!input)
     {
-        if (input[*i + 1] == '<')
-        {
-            (*i)++;
-            return (TOKEN_HEREDOC);
-        }
-        return (TOKEN_REDIRECT_IN);
-    }
-    else if (input[*i] == '>')
-    {
-        if (input[*i + 1] == '>')
-        {
-            (*i)++;
-            return (TOKEN_REDIRECT_APPEND);
-        }
-        return (TOKEN_REDIRECT_OUT);
-    }
-    return (TOKEN_WORD);
-}
-
-static t_token *create_token(char *value, t_token_type type)
-{
-    t_token *token;
-
-    token = (t_token *)malloc(sizeof(t_token));
-    if (!token)
-        return (NULL);
-    token->value = value;
-    token->type = type;
-    token->next = NULL;
-    return (token);
-}
-
-static char *get_word(char *input, int *i)
-{
-    int start;
-    int len;
-    char quote;
-
-    start = *i;
-    len = 0;
-    quote = 0;
-
-    while (input[*i + len])
-    {
-        if (!quote && (is_space(input[*i + len]) || is_operator(input[*i + len])))
-            break;
-        if (!quote && (input[*i + len] == '\'' || input[*i + len] == '"'))
-            quote = input[*i + len];
-        else if (quote && input[*i + len] == quote)
-            quote = 0;
-        len++;
+        // Handle Ctrl+D (EOF)
+        printf("exit\n");
+        shell->running = 0;
+        return;
     }
 
-    *i += len;
-    return (ft_substr(input, start, len));
+    if (strlen(input) > 0)
+    {
+        add_history(input);
+        shell->tokens = tokenize_input(input);
+        
+        if (shell->tokens)
+        {
+            shell->commands = parse_tokens(shell->tokens);
+            if (shell->commands)
+            {
+                expand_variables(shell->commands, shell);
+                shell->exit_status = execute_commands(shell);
+            }
+            free_commands(shell->commands);
+            shell->commands = NULL;
+        }
+        free_tokens(shell->tokens);
+        shell->tokens = NULL;
+    }
+    free(input);
 }
 
-t_token *tokenize_input(char *input)
+int main(int argc, char **argv, char **env)
 {
-    t_token *head;
-    t_token *current;
-    int i;
-    char *word;
-    t_token_type type;
+    t_shell shell;
+    char *input;
 
-    head = NULL;
-    current = NULL;
-    i = 0;
+    (void)argc;
+    (void)argv;
 
-    while (input[i])
+    // Initialize shell
+    initialize_shell(&shell, env);
+    
+    // Setup signal handlers
+    setup_signals();
+
+    // Main shell loop
+    while (shell.running)
     {
-        while (input[i] && is_space(input[i]))
-            i++;
-        if (!input[i])
-            break;
-
-        if (is_operator(input[i]))
-        {
-            type = get_operator_type(input, &i);
-            word = ft_substr(input, i - (type == TOKEN_HEREDOC || 
-                type == TOKEN_REDIRECT_APPEND ? 2 : 1), 
-                type == TOKEN_HEREDOC || type == TOKEN_REDIRECT_APPEND ? 2 : 1);
-        }
-        else
-        {
-            type = TOKEN_WORD;
-            word = get_word(input, &i);
-        }
-
-        if (!word)
-        {
-            free_tokens(head);
-            return (NULL);
-        }
-
-        if (!head)
-            head = create_token(word, type);
-        else
-        {
-            current = head;
-            while (current->next)
-                current = current->next;
-            current->next = create_token(word, type);
-        }
+        input = readline("minishell$ ");
+        process_input(&shell, input);
     }
-    return (head);
+
+    // Cleanup
+    free_shell(&shell);
+    return (shell.exit_status);
 }
