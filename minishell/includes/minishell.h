@@ -100,7 +100,7 @@ void        expand_variables(t_command *cmd, t_shell *shell);
 int         execute_commands(t_shell *shell);
 int         handle_pipes(t_command *cmd, t_shell *shell);
 int         handle_redirections(t_command *cmd);
-char        *find_command_path(char *cmd, char **env);
+char        *get_command_path(char *cmd, char **env);
 
 /* Builtin functions */
 int         is_builtin(char *cmd);
@@ -130,6 +130,6 @@ void        free_tokens(t_token *tokens);
 void        free_commands(t_command *commands);
 void        free_shell(t_shell *shell);
 void        print_error(char *msg);
-int         handle_heredoc(t_command *cmd, char *delimiter);
+//int         handle_heredoc(t_command *cmd, char *delimiter);
 
 #endif
