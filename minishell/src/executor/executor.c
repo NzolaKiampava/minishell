@@ -238,13 +238,18 @@ static int execute_piped_commands(t_command *cmd, t_shell *shell)
     int status;
     int last_status = 0;
     char *path;
+    t_command *current = cmd;
 
-    while (cmd)
+    while (current)
     {
-        if (cmd->next && pipe(curr_pipe) == -1)
+        // Create new pipe if there's a next command
+        if (current->next)
         {
-            print_error("pipe error");
-            return (1);
+            if (pipe(curr_pipe) == -1)
+            {
+                print_error("pipe error");
+                return (1);
+            }
         }
 
         pid = fork();
@@ -257,6 +262,7 @@ static int execute_piped_commands(t_command *cmd, t_shell *shell)
         if (pid == 0)
         {
             // Child process
+            // Set up input from previous pipe
             if (prev_pipe[0] != -1)
             {
                 dup2(prev_pipe[0], STDIN_FILENO);
@@ -264,50 +270,55 @@ static int execute_piped_commands(t_command *cmd, t_shell *shell)
                 close(prev_pipe[1]);
             }
 
-            if (cmd->next)
+            // Set up output to current pipe
+            if (current->next)
             {
-                close(curr_pipe[0]);  // Close read end in child
+                close(curr_pipe[0]);
                 dup2(curr_pipe[1], STDOUT_FILENO);
                 close(curr_pipe[1]);
             }
 
-            if (!handle_redirections(cmd))
+            // Handle any redirections specified in the command
+            if (!handle_redirections(current))
                 exit(1);
 
-            if (is_builtin(cmd->args[0]))
-                exit(execute_builtin(cmd, shell));
+            // Execute builtin or external command
+            if (is_builtin(current->args[0]))
+                exit(execute_builtin(current, shell));
 
-            path = get_command_path(cmd->args[0], shell->env);
+            path = get_command_path(current->args[0], shell->env);
             if (!path)
             {
                 print_error("Command not found");
                 exit(127);
             }
 
-            execve(path, cmd->args, shell->env);
+            execve(path, current->args, shell->env);
             free(path);
             perror("execve failed");
             exit(1);
         }
 
         // Parent process
+        // Close previous pipe if it exists
         if (prev_pipe[0] != -1)
         {
             close(prev_pipe[0]);
             close(prev_pipe[1]);
         }
 
-        if (cmd->next)
+        // If there's a next command, update prev_pipe for next iteration
+        if (current->next)
         {
             prev_pipe[0] = curr_pipe[0];
             prev_pipe[1] = curr_pipe[1];
         }
 
-        cmd = cmd->next;
+        current = current->next;
     }
 
-    // Wait for all child processes
-    while (wait(&status) > 0)
+    // Wait for all child processes to complete
+    while ((pid = wait(&status)) > 0)
     {
         if (WIFEXITED(status))
             last_status = WEXITSTATUS(status);
