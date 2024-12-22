@@ -54,6 +54,7 @@ static void	close_pipe_fds(int *pipe_fds)
 }
 */
 
+/*
 static int	setup_pipe(t_command *cmd, int *prev_pipe, int *curr_pipe)
 {
     if (prev_pipe[0] != -1)
@@ -75,6 +76,7 @@ static int	setup_pipe(t_command *cmd, int *prev_pipe, int *curr_pipe)
     }
     return (1);
 }
+*/
 
 static int	handle_heredoc(t_command *cmd)
 {
@@ -101,8 +103,13 @@ static int	handle_heredoc(t_command *cmd)
     return (pipe_fd[0]);
 }
 
-int	handle_redirections(t_command *cmd)
+int handle_redirections(t_command *cmd)
 {
+    // Salvar os file descriptors originais
+    int saved_stdout = dup(STDOUT_FILENO);
+    int saved_stdin = dup(STDIN_FILENO);
+
+    // Lidar com redirecionamento de entrada
     if (cmd->input_file)
     {
         if (cmd->input_fd == -2)  // heredoc
@@ -125,32 +132,83 @@ int	handle_redirections(t_command *cmd)
         close(cmd->input_fd);
     }
 
+    // Lidar com redirecionamento de saída
     if (cmd->output_file)
     {
-        cmd->output_fd = open(cmd->output_file, 
-            O_WRONLY | O_CREAT | (cmd->append_mode ? O_APPEND : O_TRUNC), 
-            0644);
+        // Abrir arquivo com flags apropriadas
+        int flags = O_WRONLY | O_CREAT;
+        flags |= (cmd->append_mode ? O_APPEND : O_TRUNC);
+        
+        cmd->output_fd = open(cmd->output_file, flags, 0644);
         if (cmd->output_fd == -1)
         {
             print_error("Cannot open output file");
+            if (cmd->input_file)
+                dup2(saved_stdin, STDIN_FILENO);
+            close(saved_stdout);
+            close(saved_stdin);
             return (0);
         }
+
+        // Redirecionar stdout para o arquivo
         if (dup2(cmd->output_fd, STDOUT_FILENO) == -1)
+        {
+            print_error("Failed to redirect output");
+            close(cmd->output_fd);
+            if (cmd->input_file)
+                dup2(saved_stdin, STDIN_FILENO);
+            close(saved_stdout);
+            close(saved_stdin);
             return (0);
+        }
+
+        // Fechar o file descriptor do arquivo após o dup2
         close(cmd->output_fd);
     }
+
+    // Fechar os file descriptors salvos
+    close(saved_stdout);
+    close(saved_stdin);
+
     return (1);
 }
 
-static int	execute_single_command(t_command *cmd, t_shell *shell)
+static int execute_single_command(t_command *cmd, t_shell *shell)
 {
-    pid_t	pid;
-    int		status;
-    char	*path;
+    pid_t pid;
+    int status;
+    char *path;
+    
+    // Salvar os file descriptors originais
+    int saved_stdout = dup(STDOUT_FILENO);
+    int saved_stdin = dup(STDIN_FILENO);
 
+    // Se for um builtin, aplicar redirecionamentos antes de executar
     if (is_builtin(cmd->args[0]))
-        return (execute_builtin(cmd, shell));
+    {
+        if (!handle_redirections(cmd))
+        {
+            // Restaurar os file descriptors originais em caso de erro
+            dup2(saved_stdout, STDOUT_FILENO);
+            dup2(saved_stdin, STDIN_FILENO);
+            close(saved_stdout);
+            close(saved_stdin);
+            return (1);
+        }
+        
+        // Executar o builtin
+        status = execute_builtin(cmd, shell);
+        
+        // Restaurar os file descriptors originais
+        dup2(saved_stdout, STDOUT_FILENO);
+        dup2(saved_stdin, STDIN_FILENO);
+        close(saved_stdout);
+        close(saved_stdin);
+        
+        return status;
+    }
 
+    // Para comandos não-builtin, continuar com o processo normal
     pid = fork();
     if (pid == -1)
         return (1);
@@ -172,42 +230,89 @@ static int	execute_single_command(t_command *cmd, t_shell *shell)
     return (WEXITSTATUS(status));
 }
 
-static int	execute_piped_commands(t_command *cmd, t_shell *shell)
+static int execute_piped_commands(t_command *cmd, t_shell *shell)
 {
-    pid_t	pid;
-    int		prev_pipe[2] = {-1, -1};
-    int		curr_pipe[2] = {-1, -1};
-    int		status;
-    int		last_status;
+    pid_t pid;
+    int prev_pipe[2] = {-1, -1};
+    int curr_pipe[2] = {-1, -1};
+    int status;
+    int last_status = 0;
+    char *path;
 
     while (cmd)
     {
+        if (cmd->next && pipe(curr_pipe) == -1)
+        {
+            print_error("pipe error");
+            return (1);
+        }
+
         pid = fork();
         if (pid == -1)
+        {
+            print_error("fork error");
             return (1);
+        }
+
         if (pid == 0)
         {
-            if (!setup_pipe(cmd, prev_pipe, curr_pipe))
-                exit(1);
+            // Child process
+            if (prev_pipe[0] != -1)
+            {
+                dup2(prev_pipe[0], STDIN_FILENO);
+                close(prev_pipe[0]);
+                close(prev_pipe[1]);
+            }
+
+            if (cmd->next)
+            {
+                close(curr_pipe[0]);  // Close read end in child
+                dup2(curr_pipe[1], STDOUT_FILENO);
+                close(curr_pipe[1]);
+            }
+
             if (!handle_redirections(cmd))
                 exit(1);
+
             if (is_builtin(cmd->args[0]))
                 exit(execute_builtin(cmd, shell));
-            execve(get_command_path(cmd->args[0], shell->env), 
-                cmd->args, shell->env);
+
+            path = get_command_path(cmd->args[0], shell->env);
+            if (!path)
+            {
+                print_error("Command not found");
+                exit(127);
+            }
+
+            execve(path, cmd->args, shell->env);
+            free(path);
+            perror("execve failed");
             exit(1);
         }
+
+        // Parent process
         if (prev_pipe[0] != -1)
+        {
             close(prev_pipe[0]);
-        if (curr_pipe[1] != -1)
-            close(curr_pipe[1]);
-        prev_pipe[0] = curr_pipe[0];
-        prev_pipe[1] = curr_pipe[1];
+            close(prev_pipe[1]);
+        }
+
+        if (cmd->next)
+        {
+            prev_pipe[0] = curr_pipe[0];
+            prev_pipe[1] = curr_pipe[1];
+        }
+
         cmd = cmd->next;
     }
-    
+
+    // Wait for all child processes
     while (wait(&status) > 0)
-        last_status = WEXITSTATUS(status);
+    {
+        if (WIFEXITED(status))
+            last_status = WEXITSTATUS(status);
+    }
+
     return (last_status);
 }
 
@@ -217,7 +322,7 @@ int	execute_commands(t_shell *shell)
     int			has_pipe;
 
     cmd = shell->commands;
-    if (!cmd)
+    if (!cmd || !cmd->args || !cmd->args[0])
         return (0);
 
     // Check if we have any pipes
