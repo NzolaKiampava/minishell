@@ -22,7 +22,7 @@ int is_builtin(char *cmd)
         "export", 
         "unset", 
         "env", 
-        "exit", 
+        "exit",
         NULL
     };
 
@@ -43,9 +43,8 @@ int execute_builtin(t_command *cmd, t_shell *shell)
 {
     if (!cmd->args[0])
         return EXIT_FAILURE;
-
     if (ft_strcmp(cmd->args[0], "echo") == 0)
-        return ft_echo(cmd->args);
+        return (ft_echo(cmd->args));
     else if (ft_strcmp(cmd->args[0], "cd") == 0)
         return ft_cd(cmd->args, shell);
     else if (ft_strcmp(cmd->args[0], "pwd") == 0)
@@ -58,6 +57,5 @@ int execute_builtin(t_command *cmd, t_shell *shell)
         return ft_env(shell);
     else if (ft_strcmp(cmd->args[0], "exit") == 0)
         return ft_exit(cmd->args, shell);
-    
     return EXIT_FAILURE;
 }
