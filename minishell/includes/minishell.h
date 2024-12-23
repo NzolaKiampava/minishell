@@ -112,6 +112,8 @@ int         ft_export(char **args, t_shell *shell);
 int         ft_unset(char **args, t_shell *shell);
 int         ft_env(t_shell *shell);
 int         ft_exit(char **args, t_shell *shell);
+char    *expand_env_vars(char *str, t_shell *shell);
+int     find_env_var(char **env, char *key);
 
 /* Signal handlers */
 void        setup_signals(void);
