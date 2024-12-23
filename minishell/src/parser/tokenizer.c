@@ -22,39 +22,6 @@ static int is_operator(char c)
     return (c == '|' || c == '<' || c == '>');
 }
 
-static char *process_quoted_string(char *input, int *i, char quote_char)
-{
-    int start = *i;
-    int len = 1;  // Start after the opening quote
-    char *result;
-    char *temp;
-    
-    // Find the closing quote
-    while (input[start + len] && input[start + len] != quote_char)
-        len++;
-        
-    if (!input[start + len])  // Quote was not closed
-        return (NULL);
-        
-    // Extract the content without quotes
-    temp = ft_substr(input, start + 1, len - 1);
-    if (!temp)
-        return (NULL);
-        
-    *i += len + 1;  // Move past the closing quote
-    
-    // For double quotes, keep the string as is
-    // For single quotes, escape special characters
-    if (quote_char == '"')
-        result = temp;
-    else
-    {
-        result = temp;  // For single quotes, we keep it literal
-    }
-    
-    return result;
-}
-
 static void add_token(t_token **head, char *value, t_token_type type)
 {
     t_token *new_token;
@@ -78,102 +45,127 @@ static void add_token(t_token **head, char *value, t_token_type type)
     }
 }
 
-/*
-static int handle_quotes(char *input, int *i, char quote)
+static char *get_content_between_quotes(char *input, int *i, char quote_type, int preserve_quotes)
 {
+    char *content;
+    char *result;
+    int start;
     int len;
 
-    len = 1;  // Start after the opening quote
-    while (input[*i + len] && input[*i + len] != quote)
-        len++;
-    
-    if (!input[*i + len])  // Quote was not closed
-        return (-1);
-    
-    return (len + 1);  // Include closing quote
-}
-*/
+    start = preserve_quotes ? *i : *i + 1;  // Start from quote or after quote
+    (*i)++;  // Move past opening quote
+    len = 0;
 
-static char *get_word(char *input, int *i)
+    // Count characters until closing quote
+    while (input[*i + len] && input[*i + len] != quote_type)
+        len++;
+
+    if (!input[*i + len])  // No closing quote found
+        return (NULL);
+
+    if (preserve_quotes)
+        len++;  // Include the closing quote if preserving
+
+    content = ft_substr(input, start, preserve_quotes ? len + 1 : len);
+    *i += len + 1;  // Move past the closing quote
+
+    if (!content)
+        return (NULL);
+
+    if (preserve_quotes && quote_type == '\'')
+    {
+        // Only preserve quotes for specific cases (like echo '$USER')
+        result = content;
+    }
+    else
+    {
+        result = content;
+    }
+
+    return result;
+}
+
+static char *get_unquoted_content(char *input, int *i)
 {
     int start;
     int len;
-    char *word;
-    char *quoted_part;
-    char *result;
 
     start = *i;
     len = 0;
-    result = NULL;
+    while (input[*i + len] && 
+           !is_space(input[*i + len]) && 
+           !is_operator(input[*i + len]) &&
+           input[*i + len] != '\'' && 
+           input[*i + len] != '"')
+        len++;
 
-    while (input[*i + len])
+    *i += len;
+    return (ft_substr(input, start, len));
+}
+
+static int should_preserve_quotes(t_token *head)
+{
+    if (!head)
+        return 1;  // Default to preserve if first token
+    
+    t_token *current = head;
+    while (current->next)
+        current = current->next;
+    
+    // Check if the last token is "echo"
+    return (current->type == TOKEN_WORD && 
+            ft_strcmp(current->value, "echo") == 0);
+}
+
+static char *get_word(char *input, int *i, t_token *head)
+{
+    char *result;
+    char *temp;
+    char *next_part;
+    char quote_type;
+    int preserve_quotes;
+
+    preserve_quotes = should_preserve_quotes(head);
+    result = ft_strdup("");
+    if (!result)
+        return (NULL);
+
+    while (input[*i] && !is_space(input[*i]) && !is_operator(input[*i]))
     {
-        if (is_space(input[*i + len]) || is_operator(input[*i + len]))
-            break;
-            
-        if (input[*i + len] == '\'' || input[*i + len] == '"')
+        if (input[*i] == '\'' || input[*i] == '"')
         {
-            // First, get any text before the quote
-            if (len > 0)
+            quote_type = input[*i];
+            next_part = get_content_between_quotes(input, i, quote_type, preserve_quotes);
+            if (!next_part)
             {
-                word = ft_substr(input, start, len);
-                if (!word)
-                    return (NULL);
-                result = word;
-                start = *i + len;
-            }
-            
-            // Process the quoted part
-            quoted_part = process_quoted_string(input, i, input[*i + len]);
-            if (!quoted_part)
-            {
-                if (result)
-                    free(result);
+                free(result);
                 return (NULL);
             }
-            
-            // Combine previous result with quoted part if needed
-            if (result)
-            {
-                word = ft_strjoin(result, quoted_part);
-                free(result);
-                free(quoted_part);
-                if (!word)
-                    return (NULL);
-                result = word;
-            }
-            else
-                result = quoted_part;
-                
-            start = *i;
-            len = 0;
-            continue;
-        }
-        len++;
-    }
-    
-    // Get any remaining unquoted text
-    if (len > 0)
-    {
-        word = ft_substr(input, start, len);
-        if (!word)
-        {
-            if (result)
-                free(result);
-            return (NULL);
-        }
-        if (result)
-        {
-            char *temp = ft_strjoin(result, word);
-            free(result);
-            free(word);
-            result = temp;
         }
         else
-            result = word;
+        {
+            next_part = get_unquoted_content(input, i);
+            if (!next_part)
+            {
+                free(result);
+                return (NULL);
+            }
+        }
+
+        temp = result;
+        result = ft_strjoin(result, next_part);
+        free(temp);
+        free(next_part);
+
+        if (!result)
+            return (NULL);
     }
-    
-    *i += len;
+
+    if (result[0] == '\0')
+    {
+        free(result);
+        return (NULL);
+    }
     return (result);
 }
 
@@ -184,8 +176,6 @@ static int get_operator_token(char *input, int *i, t_token **head)
 
     if (input[*i] == '|')
     {
-        if (input[*i + 1] == '|')
-            return (0);  // Error: || not supported
         value = ft_strdup("|");
         type = TOKEN_PIPE;
         (*i)++;
@@ -194,8 +184,6 @@ static int get_operator_token(char *input, int *i, t_token **head)
     {
         if (input[*i + 1] == '<')
         {
-            if (input[*i + 2] == '<')
-                return (0);  // Error: <<< invalid
             value = ft_strdup("<<");
             type = TOKEN_HEREDOC;
             (*i) += 2;
@@ -211,8 +199,6 @@ static int get_operator_token(char *input, int *i, t_token **head)
     {
         if (input[*i + 1] == '>')
         {
-            if (input[*i + 2] == '>')
-                return (0);  // Error: >>> invalid
             value = ft_strdup(">>");
             type = TOKEN_REDIRECT_APPEND;
             (*i) += 2;
@@ -243,13 +229,11 @@ t_token *tokenize_input(char *input)
     i = 0;
     while (input[i])
     {
-        // Skip spaces
         while (input[i] && is_space(input[i]))
             i++;
         if (!input[i])
             break;
 
-        // Handle operators
         if (is_operator(input[i]))
         {
             if (!get_operator_token(input, &i, &head))
@@ -260,12 +244,15 @@ t_token *tokenize_input(char *input)
             continue;
         }
 
-        // Handle words and quotes
-        word = get_word(input, &i);
+        word = get_word(input, &i, head);
         if (!word)
         {
-            free_tokens(head);
-            return (NULL);
+            if (input[i] == '\'' || input[i] == '"')  // Unclosed quote
+            {
+                free_tokens(head);
+                return (NULL);
+            }
+            continue;  // Skip empty words
         }
         add_token(&head, word, TOKEN_WORD);
     }
