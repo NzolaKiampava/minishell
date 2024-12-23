@@ -50,25 +50,65 @@ static char *expand_single_var(char *str, int *i, t_shell *shell)
     return (result);
 }
 
+static char *strip_quotes(char *str)
+{
+    char *result;
+    int len;
+    int i;
+    int j;
+
+    len = ft_strlen(str);
+    result = malloc(len + 1);
+    if (!result)
+        return (NULL);
+
+    i = 0;
+    j = 0;
+    while (str[i])
+    {
+        if ((str[i] == '\'' || str[i] == '"') && 
+            i == 0 && str[len - 1] == str[i])
+        {
+            i++;
+            continue;
+        }
+        else if ((str[i] == '\'' || str[i] == '"') && 
+                 i == len - 1 && str[0] == str[i])
+        {
+            i++;
+            continue;
+        }
+        result[j++] = str[i++];
+    }
+    result[j] = '\0';
+
+    return (result);
+}
+
 static char *expand_string(char *str, t_shell *shell)
 {
     int i;
     char *result;
     char *temp;
     char *var;
-    char quote;
+    int in_single_quotes;
+    int in_double_quotes;
+    char *final_result;
 
     result = ft_strdup("");
     i = 0;
-    quote = 0;
+    in_single_quotes = 0;
+    in_double_quotes = 0;
 
     while (str[i])
     {
-        if (!quote && (str[i] == '\'' || str[i] == '"'))
-            quote = str[i];
-        else if (quote && str[i] == quote)
-            quote = 0;
-        else if (str[i] == '$' && quote != '\'')
+        // Handle quote state changes
+        if (str[i] == '\'' && !in_double_quotes)
+            in_single_quotes = !in_single_quotes;
+        else if (str[i] == '"' && !in_single_quotes)
+            in_double_quotes = !in_double_quotes;
+        // Handle variable expansion
+        else if (str[i] == '$' && !in_single_quotes)
         {
             var = expand_single_var(str, &i, shell);
             temp = ft_strjoin(result, var);
@@ -78,13 +118,18 @@ static char *expand_string(char *str, t_shell *shell)
             continue;
         }
 
+        // Add current character to result
         temp = ft_charjoin(result, str[i]);
         free(result);
         result = temp;
         i++;
     }
 
-    return (result);
+    // Strip quotes if present
+    final_result = strip_quotes(result);
+    free(result);
+
+    return (final_result);
 }
 
 void expand_variables(t_command *cmd, t_shell *shell)
