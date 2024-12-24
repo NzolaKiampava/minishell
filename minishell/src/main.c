@@ -27,13 +27,12 @@ static void process_input(t_shell *shell, char *input)
 {
     if (!input)
     {
-        // Handle Ctrl+D (EOF)
         printf("exit\n");
         shell->running = 0;
         return;
     }
 
-    if (strlen(input) > 0)
+    if (ft_strlen(input) > 0)
     {
         add_history(input);
         shell->tokens = tokenize_input(input);
