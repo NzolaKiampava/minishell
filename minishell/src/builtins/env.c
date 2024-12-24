@@ -14,19 +14,19 @@
 
 int ft_env(t_shell *shell)
 {
-    int i = 0;
-    
-    if (!shell->env)
-    {
-        ft_putendl_fd("env: No environment variables found", STDERR_FILENO);
-        return EXIT_FAILURE;
-    }
-    
-    while (shell->env[i])
-    {
-        ft_putendl_fd(shell->env[i], STDOUT_FILENO);
-        i++;
-    }
-    
-    return EXIT_SUCCESS;
+	int i = 0;
+
+	if (!shell->env)
+	{
+		ft_putendl_fd("env: No environment variables found", STDERR_FILENO);
+		return EXIT_FAILURE;
+	}
+
+	while (shell->env[i])
+	{
+		ft_putendl_fd(shell->env[i], STDOUT_FILENO);
+		i++;
+	}
+
+	return EXIT_SUCCESS;
 }
