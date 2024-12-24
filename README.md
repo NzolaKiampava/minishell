@@ -149,6 +149,7 @@ The shell has been tested with:
 ## 👥 Contributors
 
 - [Nzola Kiampava](https://github.com/NzolaKiampava)
+- [Manuel de Almeida](https://github.com/ManuelAlmeida70)
 
 ## 📝 License
 
