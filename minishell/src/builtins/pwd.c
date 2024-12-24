@@ -12,20 +12,20 @@
 
 #include "minishell.h"
 
-int ft_pwd(void)
+int	ft_pwd(void)
 {
-    char *current_path;
-    
-    current_path = getcwd(NULL, 0);
-    
-    if (current_path == NULL)
-    {
-        perror("pwd: error retrieving current directory");
-        return EXIT_FAILURE;
-    }
-    
-    ft_putendl_fd(current_path, STDOUT_FILENO);
-    free(current_path);
-    
-    return EXIT_SUCCESS;
+	char	*current_path;
+
+	current_path = getcwd(NULL, 0);
+
+	if (current_path == NULL)
+	{
+		perror("pwd: error retrieving current directory");
+		return EXIT_FAILURE;
+	}
+
+	ft_putendl_fd(current_path, STDOUT_FILENO);
+	free(current_path);
+
+	return EXIT_SUCCESS;
 }
