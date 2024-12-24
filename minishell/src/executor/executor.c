@@ -105,18 +105,33 @@ static int	handle_heredoc(t_command *cmd)
 
 int handle_redirections(t_command *cmd)
 {
-    // Salvar os file descriptors originais
-    int saved_stdout = dup(STDOUT_FILENO);
-    int saved_stdin = dup(STDIN_FILENO);
+    int saved_stdout;
+    int saved_stdin;
 
-    // Lidar com redirecionamento de entrada
+    saved_stdout = dup(STDOUT_FILENO);
+    saved_stdin = dup(STDIN_FILENO);
+    
+    if (saved_stdout == -1 || saved_stdin == -1)
+    {
+        if (saved_stdout != -1)
+            close(saved_stdout);
+        if (saved_stdin != -1)
+            close(saved_stdin);
+        return (0);
+    }
+
+    // Handle input redirection
     if (cmd->input_file)
     {
         if (cmd->input_fd == -2)  // heredoc
         {
             cmd->input_fd = handle_heredoc(cmd);
             if (cmd->input_fd == -1)
+            {
+                close(saved_stdout);
+                close(saved_stdin);
                 return (0);
+            }
         }
         else
         {
@@ -124,18 +139,24 @@ int handle_redirections(t_command *cmd)
             if (cmd->input_fd == -1)
             {
                 print_error("No such file or directory");
+                close(saved_stdout);
+                close(saved_stdin);
                 return (0);
             }
         }
         if (dup2(cmd->input_fd, STDIN_FILENO) == -1)
+        {
+            close(cmd->input_fd);
+            close(saved_stdout);
+            close(saved_stdin);
             return (0);
+        }
         close(cmd->input_fd);
     }
 
-    // Lidar com redirecionamento de saída
+    // Handle output redirection
     if (cmd->output_file)
     {
-        // Abrir arquivo com flags apropriadas
         int flags = O_WRONLY | O_CREAT;
         flags |= (cmd->append_mode ? O_APPEND : O_TRUNC);
         
@@ -150,7 +171,6 @@ int handle_redirections(t_command *cmd)
             return (0);
         }
 
-        // Redirecionar stdout para o arquivo
         if (dup2(cmd->output_fd, STDOUT_FILENO) == -1)
         {
             print_error("Failed to redirect output");
@@ -162,14 +182,11 @@ int handle_redirections(t_command *cmd)
             return (0);
         }
 
-        // Fechar o file descriptor do arquivo após o dup2
         close(cmd->output_fd);
     }
 
-    // Fechar os file descriptors salvos
     close(saved_stdout);
     close(saved_stdin);
-
     return (1);
 }
 
@@ -248,6 +265,11 @@ static int execute_piped_commands(t_command *cmd, t_shell *shell)
             if (pipe(curr_pipe) == -1)
             {
                 print_error("pipe error");
+                if (prev_pipe[0] != -1)
+                {
+                    close(prev_pipe[0]);
+                    close(prev_pipe[1]);
+                }
                 return (1);
             }
         }
@@ -256,13 +278,22 @@ static int execute_piped_commands(t_command *cmd, t_shell *shell)
         if (pid == -1)
         {
             print_error("fork error");
+            if (prev_pipe[0] != -1)
+            {
+                close(prev_pipe[0]);
+                close(prev_pipe[1]);
+            }
+            if (current->next)
+            {
+                close(curr_pipe[0]);
+                close(curr_pipe[1]);
+            }
             return (1);
         }
 
         if (pid == 0)
         {
             // Child process
-            // Set up input from previous pipe
             if (prev_pipe[0] != -1)
             {
                 dup2(prev_pipe[0], STDIN_FILENO);
@@ -270,7 +301,6 @@ static int execute_piped_commands(t_command *cmd, t_shell *shell)
                 close(prev_pipe[1]);
             }
 
-            // Set up output to current pipe
             if (current->next)
             {
                 close(curr_pipe[0]);
@@ -278,11 +308,9 @@ static int execute_piped_commands(t_command *cmd, t_shell *shell)
                 close(curr_pipe[1]);
             }
 
-            // Handle any redirections specified in the command
             if (!handle_redirections(current))
                 exit(1);
 
-            // Execute builtin or external command
             if (is_builtin(current->args[0]))
                 exit(execute_builtin(current, shell));
 
@@ -300,14 +328,12 @@ static int execute_piped_commands(t_command *cmd, t_shell *shell)
         }
 
         // Parent process
-        // Close previous pipe if it exists
         if (prev_pipe[0] != -1)
         {
             close(prev_pipe[0]);
             close(prev_pipe[1]);
         }
 
-        // If there's a next command, update prev_pipe for next iteration
         if (current->next)
         {
             prev_pipe[0] = curr_pipe[0];
@@ -317,7 +343,7 @@ static int execute_piped_commands(t_command *cmd, t_shell *shell)
         current = current->next;
     }
 
-    // Wait for all child processes to complete
+    // Wait for all child processes
     while ((pid = wait(&status)) > 0)
     {
         if (WIFEXITED(status))
