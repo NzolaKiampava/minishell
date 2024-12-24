@@ -35,103 +35,97 @@
 */
 typedef enum e_token_type
 {
-    TOKEN_WORD,
-    TOKEN_PIPE,
-    TOKEN_REDIRECT_IN,
-    TOKEN_REDIRECT_OUT,
-    TOKEN_REDIRECT_APPEND,
-    TOKEN_HEREDOC,
-    TOKEN_EOF
-} t_token_type;
+	TOKEN_WORD,
+	TOKEN_PIPE,
+	TOKEN_REDIRECT_IN,
+	TOKEN_REDIRECT_OUT,
+	TOKEN_REDIRECT_APPEND,
+	TOKEN_HEREDOC,
+	TOKEN_EOF
+}	t_token_type;
 
 /*
 ** Token structure
 */
 typedef struct s_token
 {
-    char            *value;
-    t_token_type    type;
-    struct s_token  *next;
-} t_token;
+	char		*value;
+	t_token_type	type;
+	struct s_token	*next;
+}	t_token;
 
 /*
 ** Command structure
 */
 typedef struct s_command
 {
-    char                **args;
-    char                *input_file;
-    char                *output_file;
-    int                 input_fd;
-    int                 output_fd;
-    int                 append_mode;
-    struct s_command    *next;
-} t_command;
+	char			**args;
+	char			*input_file;
+	char			*output_file;
+	int			input_fd;
+	int			output_fd;
+	int			append_mode;
+	struct s_command	*next;
+}	t_command;
 
 /*
 ** Main shell structure
 */
 typedef struct s_shell
 {
-    char        **env;
-    t_command   *commands;
-    t_token     *tokens;
-    int         exit_status;
-    int         running;
-} t_shell;
+	char			**env;
+	t_command		*commands;
+	t_token			*tokens;
+	int			exit_status;
+	int			running;
+}	t_shell;
 
 /*
 ** Global variable for signal handling
 */
-extern int g_signal_received;
+extern int	g_signal_received;
 
 /*
 ** Function prototypes
 */
 
 /* Parser functions */
-
-t_token     *tokenize_input(char *input);
-t_command   *parse_tokens(t_token *tokens);
-void        expand_variables(t_command *cmd, t_shell *shell);
-
+t_token		*tokenize_input(char *input);
+t_command	*parse_tokens(t_token *tokens);
+void		expand_variables(t_command *cmd, t_shell *shell);
 
 /* Executor functions */
-int         execute_commands(t_shell *shell);
-int         handle_pipes(t_command *cmd, t_shell *shell);
-int         handle_redirections(t_command *cmd);
-char        *get_command_path(char *cmd, char **env);
+int		execute_commands(t_shell *shell);
+int		handle_pipes(t_command *cmd, t_shell *shell);
+int		handle_redirections(t_command *cmd);
+char		*get_command_path(char *cmd, char **env);
 
 /* Builtin functions */
-int         is_builtin(char *cmd);
-int         execute_builtin(t_command *cmd, t_shell *shell);
-int         ft_echo(char **args);
-int         ft_cd(char **args, t_shell *shell);
-int         ft_pwd(void);
-int         ft_export(char **args, t_shell *shell);
-int         ft_unset(char **args, t_shell *shell);
-int         ft_env(t_shell *shell);
-int         ft_exit(char **args, t_shell *shell);
-char    *expand_env_vars(char *str, t_shell *shell);
-int     find_env_var(char **env, char *key);
+int		is_builtin(char *cmd);
+int		execute_builtin(t_command *cmd, t_shell *shell);
+int		ft_echo(char **args);
+int		ft_cd(char **args, t_shell *shell);
+int		ft_pwd(void);
+int		ft_export(char **args, t_shell *shell);
+int		ft_unset(char **args, t_shell *shell);
+int		ft_env(t_shell *shell);
+int		ft_exit(char **args, t_shell *shell);
+char		*expand_env_vars(char *str, t_shell *shell);
 
 /* Signal handlers */
-void        setup_signals(void);
-void        handle_signal(int signo);
+void		setup_signals(void);
+void		handle_signal(int signo);
 
 /* Environment functions */
-
-char        **init_env(char **env);
-char        *get_env_value(char **env, char *key);
-int         set_env_value(char ***env, char *key, char *value);
-
+char		**init_env(char **env);
+char		*get_env_value(char **env, char *key);
+int		set_env_value(char ***env, char *key, char *value);
 
 /* Utils functions */
 
-void        free_tokens(t_token *tokens);
-void        free_commands(t_command *commands);
-void        free_shell(t_shell *shell);
-void        print_error(char *msg);
-//int         handle_heredoc(t_command *cmd, char *delimiter);
+void		free_tokens(t_token *tokens);
+void		free_commands(t_command *commands);
+void		free_shell(t_shell *shell);
+void		print_error(char *msg);
 
 #endif
