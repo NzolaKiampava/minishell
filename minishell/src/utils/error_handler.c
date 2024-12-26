@@ -18,6 +18,20 @@ void	print_error(char *msg)
 	ft_putendl_fd(msg, 2);
 }
 
+void	cleanup_pipes(int prev_pipe[2], int curr_pipe[2], int has_next)
+{
+	if (prev_pipe[0] != -1)
+	{
+		close(prev_pipe[0]);
+		close(prev_pipe[1]);
+	}
+	if (has_next)
+	{
+		close(curr_pipe[0]);
+		close(curr_pipe[1]);
+	}
+}
+
 void	free_tokens(t_token *tokens)
 {
 	t_token	*temp;
