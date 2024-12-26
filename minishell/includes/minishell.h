@@ -49,9 +49,9 @@ typedef enum e_token_type
 */
 typedef struct s_token
 {
-	char		*value;
-	t_token_type	type;
-	struct s_token	*next;
+	char				*value;
+	t_token_type		type;
+	struct s_token		*next;
 }	t_token;
 
 /*
@@ -59,12 +59,12 @@ typedef struct s_token
 */
 typedef struct s_command
 {
-	char			**args;
-	char			*input_file;
-	char			*output_file;
-	int			input_fd;
-	int			output_fd;
-	int			append_mode;
+	char				**args;
+	char				*input_file;
+	char				*output_file;
+	int					input_fd;
+	int					output_fd;
+	int					append_mode;
 	struct s_command	*next;
 }	t_command;
 
@@ -73,11 +73,11 @@ typedef struct s_command
 */
 typedef struct s_shell
 {
-	char			**env;
-	t_command		*commands;
-	t_token			*tokens;
-	int			exit_status;
-	int			running;
+	char				**env;
+	int					exit_status;
+	int					running;
+	t_command			*commands;
+	t_token				*tokens;
 }	t_shell;
 
 /*
@@ -95,21 +95,21 @@ t_command	*parse_tokens(t_token *tokens);
 void		expand_variables(t_command *cmd, t_shell *shell);
 
 /* Executor functions */
-int		execute_commands(t_shell *shell);
-int		handle_pipes(t_command *cmd, t_shell *shell);
-int		handle_redirections(t_command *cmd);
+int			execute_commands(t_shell *shell);
+int			execute_piped_commands(t_command *cmd, t_shell *shell);
+int			handle_redirections(t_command *cmd);
 char		*get_command_path(char *cmd, char **env);
 
 /* Builtin functions */
-int		is_builtin(char *cmd);
-int		execute_builtin(t_command *cmd, t_shell *shell);
-int		ft_echo(char **args);
-int		ft_cd(char **args, t_shell *shell);
-int		ft_pwd(void);
-int		ft_export(char **args, t_shell *shell);
-int		ft_unset(char **args, t_shell *shell);
-int		ft_env(t_shell *shell);
-int		ft_exit(char **args, t_shell *shell);
+int			is_builtin(char *cmd);
+int			execute_builtin(t_command *cmd, t_shell *shell);
+int			ft_echo(char **args);
+int			ft_cd(char **args, t_shell *shell);
+int			ft_pwd(void);
+int			ft_export(char **args, t_shell *shell);
+int			ft_unset(char **args, t_shell *shell);
+int			ft_env(t_shell *shell);
+int			ft_exit(char **args, t_shell *shell);
 char		*expand_env_vars(char *str, t_shell *shell);
 
 /* Signal handlers */
@@ -119,13 +119,14 @@ void		handle_signal(int signo);
 /* Environment functions */
 char		**init_env(char **env);
 char		*get_env_value(char **env, char *key);
-int		set_env_value(char ***env, char *key, char *value);
+int			set_env_value(char ***env, char *key, char *value);
 
 /* Utils functions */
 
 void		free_tokens(t_token *tokens);
 void		free_commands(t_command *commands);
 void		free_shell(t_shell *shell);
+void		cleanup_pipes(int prev_pipe[2], int curr_pipe[2], int has_next);
 void		print_error(char *msg);
 
 #endif
