@@ -21,14 +21,14 @@ SRCS = $(SRCS_DIR)/main.c \
        $(SRCS_DIR)/builtins/pwd.c \
        $(SRCS_DIR)/builtins/unset.c \
        $(SRCS_DIR)/executor/executor.c \
+       $(SRCS_DIR)/executor/pipe_handler.c \
+       $(SRCS_DIR)/executor/redirections.c \
        $(SRCS_DIR)/parser/parser.c \
        $(SRCS_DIR)/parser/tokenizer.c \
        $(SRCS_DIR)/parser/expander.c \
        $(SRCS_DIR)/signals/signals.c \
        $(SRCS_DIR)/utils/environment.c \
        $(SRCS_DIR)/utils/error_handler.c
-#$(SRCS_DIR)/executor/pipe_handler.c \
-#$(SRCS_DIR)/executor/redirections.c \
 
 # Object files
 OBJS = $(SRCS:$(SRCS_DIR)/%.c=$(OBJ_DIR)/%.o)
