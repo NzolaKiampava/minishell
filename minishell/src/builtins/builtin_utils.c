@@ -12,33 +12,31 @@
 
 #include "minishell.h"
 
-// Função para verificar se o comando é um built-in
 int	is_builtin(char *cmd)
 {
-	int		i;
-	char	*builtin_commands[] = {
-		"echo",
-		"cd",
-		"pwd",
-		"export",
-		"unset",
-		"env",
-		"exit",
-		NULL
-	};
+	int			i;
+	char		*builtin_commands[8];
 
+	builtin_commands[0] = "echo";
+	builtin_commands[1] = "cd";
+	builtin_commands[2] = "pwd";
+	builtin_commands[3] = "export";
+	builtin_commands[4] = "unset";
+	builtin_commands[5] = "env";
+	builtin_commands[6] = "exit";
+	builtin_commands[7] = NULL;
 	if (!cmd)
 		return (0);
 	i = 0;
-	while (builtin_commands[i++])
+	while (builtin_commands[i])
 	{
 		if (ft_strcmp(cmd, builtin_commands[i]) == 0)
 			return (1);
+		i++;
 	}
 	return (0);
 }
 
-// Função para executar o comando built-in correto
 int	execute_builtin(t_command *cmd, t_shell *shell)
 {
 	if (!cmd->args[0])
