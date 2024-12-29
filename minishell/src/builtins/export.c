@@ -36,22 +36,36 @@ static char	*find_equal_sign(char *str)
 	return (NULL);
 }
 
-int	ft_export(char **args, t_shell *shell)
+static int	print_env_vars(t_shell *shell)
 {
-	int		i;
-	char	*name_end;
+	int	i;
 
 	i = 0;
-	if (!args[1])
+	while (shell->env[i++])
 	{
-		while (shell->env[i++])
-		{
-			ft_putstr_fd("declare -x ", STDOUT_FILENO);
-			ft_putendl_fd(shell->env[i], STDOUT_FILENO);
-		}
-		return (EXIT_SUCCESS);
+		ft_putstr_fd("declare -x ", STDOUT_FILENO);
+		ft_putendl_fd(shell->env[i], STDOUT_FILENO);
 	}
+	return (EXIT_SUCCESS);
+}
+
+static int	handle_invalid_identifier(char *arg)
+{
+	ft_putstr_fd("export: `", STDERR_FILENO);
+	ft_putstr_fd(arg, STDERR_FILENO);
+	ft_putendl_fd("': not a valid identifier", STDERR_FILENO);
+	return (EXIT_FAILURE);
+}
+
+int	ft_export(char **args, t_shell *shell)
+{
+	char		*name_end;
+	int 		i;
+
+	if (!args[1])
+		return (print_env_vars(shell));
 	i = 1;
+
 	while (args[i++])
 	{
 		name_end = find_equal_sign(args[i]);
@@ -59,24 +73,11 @@ int	ft_export(char **args, t_shell *shell)
 		{
 			*name_end = '\0';
 			if (!is_valid_name(args[i]))
-			{
-				ft_putstr_fd("export: `", STDERR_FILENO);
-				ft_putstr_fd(args[i], STDERR_FILENO);
-				ft_putendl_fd("': not a valid identifier", STDERR_FILENO);
-				return (EXIT_FAILURE);
-			}
+				return (handle_invalid_identifier(args[i]));
 			set_env_value(&shell->env, args[i], name_end + 1);
 		}
-		else
-		{
-			if (!is_valid_name(args[i]))
-			{
-				ft_putstr_fd("export: `", STDERR_FILENO);
-				ft_putstr_fd(args[i], STDERR_FILENO);
-				ft_putendl_fd("': not a valid identifier", STDERR_FILENO);
-				return (EXIT_FAILURE);
-			}
-		}
+		else if (!is_valid_name(args[i]))
+			return (handle_invalid_identifier(args[i]));
 	}
 	return (EXIT_SUCCESS);
 }
