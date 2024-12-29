@@ -12,59 +12,81 @@
 
 #include "libft.h"
 
-char	*ft_strjoin_three(const char *key, const char *separator, const char *value)
+static size_t	ft_strlen(const char *str)
+{
+	size_t	len;
+
+	len = 0;
+	while (str[len])
+		len++;
+	return (len);
+}
+
+static int	check_params(const char *key, const char *separator,
+		const char *value, size_t *total_len)
 {
 	size_t	key_len;
 	size_t	sep_len;
 	size_t	value_len;
-	char	*result;
 
 	if (!key || !separator || !value)
-		return (NULL);
+		return (0);
+	key_len = ft_strlen(key);
+	sep_len = ft_strlen(separator);
+	value_len = ft_strlen(value);
+	*total_len = key_len + sep_len + value_len + 1;
+	return (1);
+}
 
-	key_len = 0;
-	while (key[key_len])
-		key_len++;
+static void	copy_key(char *dest, const char *key, size_t *index)
+{
+	size_t	i;
 
-	sep_len = 0;
-	while (separator[sep_len])
-		sep_len++;
-
-	value_len = 0;
-	while (value[value_len])
-		value_len++;
-
-	// Allocate memory for the concatenated string
-	result = (char *)malloc(key_len + sep_len + value_len + 1);
-	if (!result)
-		return (NULL);
-
-	// Copy key
-	size_t i = 0;
+	i = 0;
 	while (key[i])
 	{
-		result[i] = key[i];
+		dest[i] = key[i];
 		i++;
 	}
+	*index = i;
+}
 
-	// Copy separator
-	size_t j = 0;
-	while (separator[j])
+static void	copy_separator(char *dest, const char *separator,
+		size_t start, size_t *len)
+{
+	size_t	i;
+
+	i = 0;
+	while (separator[i])
 	{
-		result[i + j] = separator[j];
-		j++;
+		dest[start + i] = separator[i];
+		i++;
 	}
+	*len = i;
+}
 
-	// Copy value
-	size_t k = 0;
+char	*ft_strjoin_three(const char *key, const char *separator,
+		const char *value)
+{
+	char	*result;
+	size_t	i;
+	size_t	j;
+	size_t	k;
+	size_t	total_len;
+
+	if (!check_params(key, separator, value, &total_len))
+		return (NULL);
+	result = (char *)malloc(total_len);
+	if (!result)
+		return (NULL);
+	copy_key(result, key, &i);
+	copy_separator(result, separator, i, &j);
+	k = 0;
 	while (value[k])
 	{
 		result[i + j + k] = value[k];
 		k++;
 	}
-
-	// Null-terminate the string
 	result[i + j + k] = '\0';
-
 	return (result);
 }
