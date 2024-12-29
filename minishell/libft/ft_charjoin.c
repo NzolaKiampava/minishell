@@ -14,27 +14,27 @@
 
 char	*ft_charjoin(char *result, char c)
 {
-    char	*new_str;
-    int		i;
-    int		len;
+	char	*new_str;
+	int		i;
+	int		len;
 
-    if (!result)
-    {
-        new_str = malloc(sizeof(char) * 2);
-        if (!new_str)
-            return (NULL);
-        new_str[0] = c;
-        new_str[1] = '\0';
-        return (new_str);
-    }
-    len = ft_strlen(result);
-    new_str = malloc(sizeof(char) * (len + 2));
-    if (!new_str)
-        return (NULL);
-    i = -1;
-    while (result[++i])
-        new_str[i] = result[i];
-    new_str[i] = c;
-    new_str[i + 1] = '\0';
-    return (new_str);
+	if (!result)
+	{
+		new_str = malloc(sizeof(char) * 2);
+		if (!new_str)
+			return (NULL);
+		new_str[0] = c;
+		new_str[1] = '\0';
+		return (new_str);
+	}
+	len = ft_strlen(result);
+	new_str = malloc(sizeof(char) * (len + 2));
+	if (!new_str)
+		return (NULL);
+	i = -1;
+	while (result[++i])
+		new_str[i] = result[i];
+	new_str[i] = c;
+	new_str[i + 1] = '\0';
+	return (new_str);
 }
