@@ -12,19 +12,14 @@
 
 #include "libft.h"
 
-int ft_strcmp(const char *s1, const char *s2)
+int	ft_strcmp(const char *s1, const char *s2)
 {
-    // Compara caracteres até encontrar diferença ou terminador nulo
-    while (*s1 != '\0' && *s2 != '\0') {
-        // Se os caracteres forem diferentes, retorna a diferença
-        if (*s1 != *s2)
-            return (unsigned char)*s1 - (unsigned char)*s2;
-        
-        // Avança para os próximos caracteres
-        s1++;
-        s2++;
-    }
-
-    // Verifica se uma das strings terminou antes da outra
-    return (unsigned char)*s1 - (unsigned char)*s2;
+	while (*s1 != '\0' && *s2 != '\0')
+	{
+		if (*s1 != *s2)
+			return ((unsigned char)*s1 - (unsigned char)*s2);
+		s1++;
+		s2++;
+	}
+	return ((unsigned char)*s1 - (unsigned char)*s2);
 }
