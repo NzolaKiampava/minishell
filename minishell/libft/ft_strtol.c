@@ -12,83 +12,93 @@
 
 #include "libft.h"
 
-long ft_strtol(const char *nptr, char **endptr, int base)
+static void	skip_whitespace_and_sign(const char **nptr, int *sign)
 {
-    long result = 0;
-    int sign = 1;
-    int overflow = 0;
+	while (**nptr == ' ' || **nptr == '\t')
+		(*nptr)++;
+	*sign = 1;
+	if (**nptr == '-')
+	{
+		*sign = -1;
+		(*nptr)++;
+	}
+	else if (**nptr == '+')
+		(*nptr)++;
+}
 
-    // Pula espaços em branco iniciais
-    while (*nptr == ' ' || *nptr == '\t')
-        nptr++;
+static int	detect_base(const char **nptr, int base)
+{
+	if (base == 0)
+	{
+		if (**nptr == '0')
+		{
+			(*nptr)++;
+			if (**nptr == 'x' || **nptr == 'X')
+			{
+				(*nptr)++;
+				return (16);
+			}
+			return (8);
+		}
+		return (10);
+	}
+	return (base);
+}
 
-    // Verifica o sinal
-    if (*nptr == '-') {
-        sign = -1;
-        nptr++;
-    } else if (*nptr == '+') {
-        nptr++;
-    }
+static int	get_digit_value(char c, int base)
+{
+	int	digit;
 
-    // Verifica a base
-    if (base == 0) {
-        // Detecção automática da base
-        if (*nptr == '0') {
-            nptr++;
-            if (*nptr == 'x' || *nptr == 'X') {
-                base = 16;
-                nptr++;
-            } else {
-                base = 8;
-            }
-        } else {
-            base = 10;
-        }
-    }
+	if (c >= '0' && c <= '9')
+		digit = c - '0';
+	else if (c >= 'a' && c <= 'z')
+		digit = c - 'a' + 10;
+	else if (c >= 'A' && c <= 'Z')
+		digit = c - 'A' + 10;
+	else
+		return (-1);
+	if (digit >= base)
+		return (-1);
+	return (digit);
+}
 
-    // Conversão
-    while (*nptr) {
-        int digit;
-        
-        // Converte o caractere para dígito
-        if (*nptr >= '0' && *nptr <= '9')
-            digit = *nptr - '0';
-        else if (*nptr >= 'a' && *nptr <= 'z')
-            digit = *nptr - 'a' + 10;
-        else if (*nptr >= 'A' && *nptr <= 'Z')
-            digit = *nptr - 'A' + 10;
-        else
-            break;
+static long	process_digits(const char **nptr, int base, int *overflow)
+{
+	long			result;
+	long			prev;
+	int				digit;
 
-        // Verifica se o dígito é válido para a base
-        if (digit >= base)
-            break;
+	result = 0;
+	digit = get_digit_value(**nptr, base);
+	while (digit >= 0)
+	{
+		if (!*overflow)
+		{
+			prev = result;
+			result = result * base + digit;
+			if (result / base != prev)
+				*overflow = 1;
+		}
+		(*nptr)++;
+		digit = get_digit_value(**nptr, base);
+	}
+	return (result);
+}
 
-        // Verifica overflow
-        if (!overflow) {
-            long prev = result;
-            result = result * base + digit;
-            
-            // Verifica se houve overflow
-            if (result / base != prev)
-                overflow = 1;
-        }
+long	ft_strtol(const char *nptr, char **endptr, int base)
+{
+	long			result;
+	int				sign;
+	int				overflow;
 
-        nptr++;
-    }
-
-    // Configura o endptr se fornecido
-    if (endptr)
-        *endptr = (char *)nptr;
-
-    // Aplica o sinal
-    result *= sign;
-
-    // Lida com overflow
-    if (overflow) {
-        // Em caso de overflow, retorna LONG_MAX ou LONG_MIN
-        return (sign == 1) ? LONG_MAX : LONG_MIN;
-    }
-
-    return result;
+	overflow = 0;
+	skip_whitespace_and_sign(&nptr, &sign);
+	base = detect_base(&nptr, base);
+	result = process_digits(&nptr, base, &overflow);
+	if (endptr)
+		*endptr = (char *)nptr;
+	result *= sign;
+	if (overflow)
+		return (sign == 1 ? LONG_MAX : LONG_MIN);
+	return (result);
 }
