@@ -21,11 +21,11 @@ int	ft_pwd(void)
 	if (current_path == NULL)
 	{
 		perror("pwd: error retrieving current directory");
-		return EXIT_FAILURE;
+		return (EXIT_FAILURE);
 	}
 
 	ft_putendl_fd(current_path, STDOUT_FILENO);
 	free(current_path);
 
-	return EXIT_SUCCESS;
+	return (EXIT_SUCCESS);
 }
