@@ -15,6 +15,7 @@
 
 # include <stdio.h>
 # include <stdlib.h>
+# include <stdbool.h>
 # include <unistd.h>
 # include <fcntl.h>
 # include <sys/wait.h>
@@ -128,5 +129,31 @@ void		free_commands(t_command *commands);
 void		free_shell(t_shell *shell);
 void		cleanup_pipes(int prev_pipe[2], int curr_pipe[2], int has_next);
 void		print_error(char *msg);
+
+/* Parser Utils Functions */
+int			validate_redirect_syntax(t_token *token);
+int			validate_pipe_syntax(t_token *tokens);
+
+/* Tokenizer Utils Functions */
+void		add_token(t_token **head, char *value, t_token_type type);
+char		*get_content_between_quotes(char *input, int *i, char quote_type,
+				int preserve_quotes);
+char		*get_unquoted_content(char *input, int *i);
+int			should_preserve_quotes(t_token *head);
+char		*join_word_parts(char *result, char *next_part);
+char		*process_word_part(char *input, int *i, char *result,
+				t_token *head);
+void		process_operator(char *input, int *i, char **value,
+				t_token_type *type);
+
+/* Expander Utils Functions */
+char		*process_quotes(char c, int *quotes);
+char		*process_expansion(char *str, int *i, char *result, t_shell *shell);
+
+/* UTILS */
+int			is_space(char c);
+int			is_operator(char c);
+int			add_arg(t_command *cmd, char *arg);
+t_command	*create_command(void);
 
 #endif
