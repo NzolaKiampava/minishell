@@ -28,7 +28,11 @@ SRCS = $(SRCS_DIR)/main.c \
        $(SRCS_DIR)/parser/expander.c \
        $(SRCS_DIR)/signals/signals.c \
        $(SRCS_DIR)/utils/environment.c \
-       $(SRCS_DIR)/utils/error_handler.c
+       $(SRCS_DIR)/utils/error_handler.c \
+       $(SRCS_DIR)/utils/utils.c \
+       $(SRCS_DIR)/utils/parser_utils.c \
+       $(SRCS_DIR)/utils/token_utils.c \
+       $(SRCS_DIR)/utils/token2_utils.c \
 
 # Object files
 OBJS = $(SRCS:$(SRCS_DIR)/%.c=$(OBJ_DIR)/%.o)
