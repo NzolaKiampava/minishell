@@ -47,8 +47,8 @@ void	free_tokens(t_token *tokens)
 
 void	free_commands(t_command *commands)
 {
-	t_command *temp;
-	int i;
+	t_command	*temp;
+	int			i;
 
 	while (commands)
 	{
@@ -67,7 +67,6 @@ void	free_commands(t_command *commands)
 			free(temp->input_file);
 		if (temp->output_file)
 			free(temp->output_file);
-
 		free(temp);
 	}
 }
