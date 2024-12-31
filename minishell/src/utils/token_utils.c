@@ -48,10 +48,10 @@ char	*prepare_quote_extraction(char *input, int *i, int preserve_quotes,
 char	*get_content_between_quotes(char *input, int *i, char quote_type,
 	int preserve_quotes)
 {
-    char        *content;
-    char        *result;
-    int         start;
-    int         len;
+	char		*content;
+	char		*result;
+	int			start;
+	int			len;
 
 	input = prepare_quote_extraction(input, i, preserve_quotes, &start);
 	len = 0;
