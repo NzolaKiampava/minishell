@@ -12,24 +12,23 @@
 
 #include "minishell.h"
 
+// Handle CTRL+C
 void	handle_signal(int signo)
 {
-	if (signo == SIGINT) 
+	if (signo == SIGINT)
 	{
-		// Handle CTRL+C
 		g_signal_received = 1;
 		printf("\n");
-		rl_replace_line("", 0);  // Clear the current input line
-		rl_on_new_line();        // Move to a new line
-		rl_redisplay();          // Redisplay the prompt
+		rl_replace_line("", 0);
+		rl_on_new_line();
+		rl_redisplay();
 	}
 }
 
+// Handle SIGINT (CTRL+C)
+// Ignore SIGQUIT (CTRL+\)
 void	setup_signals(void)
 {
-	// Handle SIGINT (CTRL+C)
 	signal(SIGINT, handle_signal);
-
-	// Ignore SIGQUIT (CTRL+\)
 	signal(SIGQUIT, SIG_IGN);
 }
