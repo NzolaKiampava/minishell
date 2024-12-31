@@ -12,101 +12,75 @@
 
 #include "minishell.h"
 
-static char	*expand_single_var(char *str, int *i, t_shell *shell)
-{
-	int		start;
-	int		len;
-	char	*var_name;
-	char	*var_value;
-	char	*result;
-
-	start = *i;
-	len = 0;
-	if (str[*i] == '?')
-	{
-		(*i)++;
-		return (ft_itoa(shell->exit_status));
-	}
-	while (str[*i + len] && (ft_isalnum(str[*i + len]) || str[*i + len] == '_'))
-		len++;
-	if (len == 0)
-		return (ft_strdup("$"));
-	*i += len;
-	var_name = ft_substr(str, start, len);
-	if (!var_name)
-		return (NULL);
-	var_value = get_env_value(shell->env, var_name);
-	free(var_name);
-	result = var_value ? ft_strdup(var_value) : ft_strdup("");
-	return (result);
-}
-
 static char	*strip_quotes(char *str)
 {
-	char	*result;
-	int		len;
-	int		i;
-	int		j;
+	int			len;
+	int			i;
+	int			j;
+	int			limit;
+	char		*result;
 
 	len = ft_strlen(str);
 	result = malloc(len + 1);
 	if (!result)
 		return (NULL);
-	i = 0;
+	if (is_quoted(str, len))
+		i = 1;
+	else
+		i = 0;
 	j = 0;
-	while (str[i])
-	{
-		if ((str[i] == '\'' || str[i] == '"')
-			&& i == 0 && str[len - 1] == str[i])
-		{
-			i++;
-			continue ;
-		}
-		else if ((str[i] == '\'' || str[i] == '"')
-			&& i == len - 1 && str[0] == str[i])
-		{
-			i++;
-			continue ;
-		}
+	limit = len;
+	if (is_quoted(str, len))
+		limit = len - 1;
+	while (str[i] && i < limit)
 		result[j++] = str[i++];
-	}
 	result[j] = '\0';
 	return (result);
 }
 
-static char *expand_string(char *str, t_shell *shell)
+static char	*expand_string(char *str, t_shell *shell)
 {
-    int i;
-    char *result;
-    int quotes[2];
-    char *final_result;
+	int			i;
+	int			quotes[2];
+	char		*result;
+	char		*final_result;
+	char		*temp;
 
-    result = ft_strdup("");
-    i = 0;
-    quotes[0] = 0;
-    quotes[1] = 0;
-    while (str[i])
-    {
-        process_quotes(str[i], quotes);
-        if (str[i] == '$' && !quotes[0])
-            result = process_expansion(str, &i, result, shell);
-        else
-        {
-            char *temp = ft_charjoin(result, str[i]);
-            free(result);
-            result = temp;
-        }
-        i++;
-    }
-    final_result = strip_quotes(result);
-    free(result);
-    return final_result;
+	result = ft_strdup("");
+	i = -1;
+	quotes[0] = 0;
+	quotes[1] = 0;
+	while (str[++i])
+	{
+		process_quotes(str[i], quotes);
+		if (str[i] == '$' && !quotes[0])
+			result = process_expansion(str, &i, result, shell);
+		else
+		{
+			temp = ft_charjoin(result, str[i]);
+			free(result);
+			result = temp;
+		}
+	}
+	final_result = strip_quotes(result);
+	free(result);
+	return (final_result);
+}
+
+static char	*expand_and_replace(char *original, t_shell *shell)
+{
+	char	*expanded;
+
+	if (!original)
+		return (NULL);
+	expanded = expand_string(original, shell);
+	free(original);
+	return (expanded);
 }
 
 void	expand_variables(t_command *cmd, t_shell *shell)
 {
 	int	i;
-	char	*expanded;
 
 	while (cmd)
 	{
@@ -115,24 +89,12 @@ void	expand_variables(t_command *cmd, t_shell *shell)
 			i = 0;
 			while (cmd->args[i])
 			{
-				expanded = expand_string(cmd->args[i], shell);
-				free(cmd->args[i]);
-				cmd->args[i] = expanded;
+				cmd->args[i] = expand_and_replace(cmd->args[i], shell);
 				i++;
 			}
 		}
-		if (cmd->input_file)
-		{
-			expanded = expand_string(cmd->input_file, shell);
-			free(cmd->input_file);
-			cmd->input_file = expanded;
-		}
-		if (cmd->output_file)
-		{
-			expanded = expand_string(cmd->output_file, shell);
-			free(cmd->output_file);
-			cmd->output_file = expanded;
-		}
+		cmd->input_file = expand_and_replace(cmd->input_file, shell);
+		cmd->output_file = expand_and_replace(cmd->output_file, shell);
 		cmd = cmd->next;
 	}
 }
