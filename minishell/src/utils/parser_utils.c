@@ -18,8 +18,8 @@ int	validate_redirect_syntax(t_token *token)
 		return (0);
 	if (token->next->type != TOKEN_WORD)
 		return (0);
-	if (token->next->next &&
-		(token->next->next->type == TOKEN_REDIRECT_IN
+	if (token->next->next
+		&& (token->next->next->type == TOKEN_REDIRECT_IN
 			|| token->next->next->type == TOKEN_REDIRECT_OUT
 			|| token->next->next->type == TOKEN_REDIRECT_APPEND
 			|| token->next->next->type == TOKEN_HEREDOC))
@@ -40,4 +40,25 @@ int	validate_pipe_syntax(t_token *tokens)
 		tokens = tokens->next;
 	}
 	return (1);
+}
+
+char	*search_in_path(char **paths, char *cmd)
+{
+	char		*full_path;
+	int			i;
+
+	i = 0;
+	while (paths[i])
+	{
+		full_path = ft_strjoin_three(paths[i], "/", cmd);
+		if (!access(full_path, X_OK))
+		{
+			ft_free_array(paths);
+			return (full_path);
+		}
+		free(full_path);
+		i++;
+	}
+	ft_free_array(paths);
+	return (NULL);
 }
