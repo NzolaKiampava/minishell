@@ -39,7 +39,7 @@ static int	handle_redirect_type(t_command *cmd, t_token_type type, char *value)
 	return (1);
 }
 
-static int handle_redirect(t_command *cmd, t_token **token)
+static int	handle_redirect(t_command *cmd, t_token **token)
 {
 	t_token_type	type;
 
