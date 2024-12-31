@@ -27,25 +27,25 @@ char	*join_word_parts(char *result, char *next_part)
 char	*process_word_part(char *input, int *i, char *result,
 	t_token *head)
 {
-    char    *next_part;
-    char    quote_type;
-    int     preserve_quotes;
+	char		*next_part;
+	char		quote_type;
+	int			preserve_quotes;
 
-    preserve_quotes = should_preserve_quotes(head);
-    if (input[*i] == '\'' || input[*i] == '"')
-    {
-        quote_type = input[*i];
-        next_part = get_content_between_quotes(input, i, quote_type,
-                                                    preserve_quotes);
-    }
-    else
-        next_part = get_unquoted_content(input, i);
-    if (!next_part)
-    {
-        free(result);
-        return (NULL);
-    }
-    return (join_word_parts(result, next_part));
+	preserve_quotes = should_preserve_quotes(head);
+	if (input[*i] == '\'' || input[*i] == '"')
+	{
+		quote_type = input[*i];
+		next_part = get_content_between_quotes(input, i, quote_type,
+				preserve_quotes);
+	}
+	else
+		next_part = get_unquoted_content(input, i);
+	if (!next_part)
+	{
+		free(result);
+		return (NULL);
+	}
+	return (join_word_parts(result, next_part));
 }
 
 void	process_operator(char *input, int *i, char **value,
