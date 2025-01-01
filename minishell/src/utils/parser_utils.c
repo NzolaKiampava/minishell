@@ -62,3 +62,12 @@ char	*search_in_path(char **paths, char *cmd)
 	ft_free_array(paths);
 	return (NULL);
 }
+
+void	update_quotes(char c, int quotes[2])
+{
+	if (c == '\'' && !quotes[1])
+		quotes[0] = !quotes[0];
+	else if (c == '"' && !quotes[0])
+		quotes[1] = !quotes[1];
+}
+
