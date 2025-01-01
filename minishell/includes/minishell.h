@@ -134,6 +134,7 @@ void		print_error(char *msg);
 int			validate_redirect_syntax(t_token *token);
 int			validate_pipe_syntax(t_token *tokens);
 char		*search_in_path(char **paths, char *cmd);
+void		update_quotes(char c, int quotes[2]);
 
 /* Tokenizer Utils Functions */
 void		add_token(t_token **head, char *value, t_token_type type);
@@ -148,10 +149,12 @@ void		process_operator(char *input, int *i, char **value,
 				t_token_type *type);
 
 /* Expander Utils Functions */
-char		*process_quotes(char c, int *quotes);
-char		*process_expansion(char *str, int *i, char *result, t_shell *shell);
-char		*get_var_name(char *str, int *i, int *len);
-int			is_quoted(char *str, int len);
+char		*get_var_value(char *var_value);
+char		*get_var_name(char *str, int *i, int start);
+char		*process_quotes(char *str, char *result, int *i, int *j);
+char		*strip_quotes(char *str);
+char		*expand_single_var(char *str, int *i, t_shell *shell);
+
 
 /* Pipe Utils Functins */
 int			setup_pipes(int curr_pipe[2], int prev_pipe[2], t_command *current);
