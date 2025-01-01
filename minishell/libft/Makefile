@@ -15,6 +15,7 @@ CC = gcc
 CFLAGS = -Wall -Werror -Wextra -g3
 AR = ar rcs
 SRC = ft_isalpha \
+	ft_append_char \
 	ft_isdigit \
 	ft_isalnum \
 	ft_isascii \
