@@ -12,71 +12,78 @@
 
 #include "minishell.h"
 
-int	is_quoted(char *str, int len)
+char	*get_var_value(char *var_value)
 {
-	return ((str[0] == '\'' || str[0] == '"') && str[0] == str[len - 1]);
+	if (var_value)
+		return (ft_strdup(var_value));
+	return (ft_strdup(""));
 }
 
-char	*get_var_name(char *str, int *i, int *len)
+char	*get_var_name(char *str, int *i, int start)
 {
-	*len = 0;
-	while (str[*i + *len] && (ft_isalnum(str[*i + *len])
-			|| str[*i + *len] == '_'))
-		(*len)++;
-	if (*len == 0)
-		return (NULL);
+	int	len;
+
+	len = 0;
+	while (str[*i + len] && (ft_isalnum(str[*i + len]) || str[*i + len] == '_'))
+		len++;
+	*i += len;
+	return (ft_substr(str, start, len));
+}
+
+char	*process_quotes(char *str, char *result, int *i, int *j)
+{
+	int	len;
+
+	len = ft_strlen(str);
+	if ((str[*i] == '\'' || str[*i] == '"')
+		&& *i == 0 && str[len - 1] == str[*i])
+		(*i)++;
+	else if ((str[*i] == '\'' || str[*i] == '"')
+		&& *i == len - 1 && str[0] == str[*i])
+		(*i)++;
 	else
-		return (ft_substr(str, *i, *len));
+		result[(*j)++] = str[(*i)++];
+	return (result);
 }
 
-char	*process_quotes(char c, int *quotes)
+char	*strip_quotes(char *str)
 {
-	if (c == '\'' && !quotes[1])
-		quotes[0] = !quotes[0];
-	else if (c == '"' && !quotes[0])
-		quotes[1] = !quotes[1];
-	return (NULL);
+	char	*result;
+	int		i;
+	int		j;
+
+	result = malloc(ft_strlen(str) + 1);
+	if (!result)
+		return (NULL);
+	i = 0;
+	j = 0;
+	while (str[i])
+		result = process_quotes(str, result, &i, &j);
+	result[j] = '\0';
+	return (result);
 }
 
-static char	*expand_single_var(char *str, int *i, t_shell *shell)
+char	*expand_single_var(char *str, int *i, t_shell *shell)
 {
-	char		*var_name;
-	char		*var_value;
-	char		*result;
-	int			len;
+	char	*var_name;
+	char	*var_value;
+	char	*result;
+	int		start;
 
+	(*i)++;
+	start = *i;
 	if (str[*i] == '?')
 	{
 		(*i)++;
 		return (ft_itoa(shell->exit_status));
 	}
-	var_name = get_var_name(str, i, &len);
-	if (!var_name)
+	if (!ft_isalnum(str[*i]) && str[*i] != '_')
 		return (ft_strdup("$"));
-	*i += len;
+	var_name = get_var_name(str, i, start);
+	if (!var_name)
+		return (NULL);
 	var_value = get_env_value(shell->env, var_name);
 	free(var_name);
-	if (var_value)
-		result = ft_strdup(var_value);
-	else
-		result = ft_strdup("");
+	result = get_var_value(var_value);
 	return (result);
-}
-
-char	*process_expansion(char *str, int *i, char *result, t_shell *shell)
-{
-	char	*temp;
-	char	*var;
-
-	if (str[*i] == '$')
-	{
-		var = expand_single_var(str, i, shell);
-		temp = ft_strjoin(result, var);
-		free(result);
-		free(var);
-		return (temp);
-	}
-	temp = ft_charjoin(result, str[*i]);
-	free(result);
-	return (temp);
 }
