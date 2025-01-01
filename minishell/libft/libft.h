@@ -44,6 +44,7 @@ int		ft_isprint(int c);
 int		ft_toupper(int c);
 int		ft_tolower(int c);
 char	*ft_charjoin(char *result, char c);
+char	*ft_append_char(char *str, char c);
 
 /* ---------------	STRINGS		--------------- */
 size_t	ft_strlen(const char *str);
