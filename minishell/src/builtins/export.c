@@ -41,10 +41,11 @@ static int	print_env_vars(t_shell *shell)
 	int	i;
 
 	i = 0;
-	while (shell->env[i++])
+	while (shell->env[i])
 	{
 		ft_putstr_fd("declare -x ", STDOUT_FILENO);
 		ft_putendl_fd(shell->env[i], STDOUT_FILENO);
+		i++;
 	}
 	return (EXIT_SUCCESS);
 }
@@ -60,13 +61,12 @@ static int	handle_invalid_identifier(char *arg)
 int	ft_export(char **args, t_shell *shell)
 {
 	char		*name_end;
-	int 		i;
+	int			i;
 
 	if (!args[1])
 		return (print_env_vars(shell));
 	i = 1;
-
-	while (args[i++])
+	while (args[i])
 	{
 		name_end = find_equal_sign(args[i]);
 		if (name_end)
@@ -78,6 +78,7 @@ int	ft_export(char **args, t_shell *shell)
 		}
 		else if (!is_valid_name(args[i]))
 			return (handle_invalid_identifier(args[i]));
+		i++;
 	}
 	return (EXIT_SUCCESS);
 }
