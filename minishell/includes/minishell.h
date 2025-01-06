@@ -155,7 +155,6 @@ char		*process_quotes(char *str, char *result, int *i, int *j);
 char		*strip_quotes(char *str);
 char		*expand_single_var(char *str, int *i, t_shell *shell);
 
-
 /* Pipe Utils Functins */
 int			setup_pipes(int curr_pipe[2], int prev_pipe[2], t_command *current);
 void		redirect_pipes(int prev_pipe[2], int curr_pipe[2]);
