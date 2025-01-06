@@ -16,6 +16,7 @@ int	ft_env(t_shell *shell)
 {
 	int	i;
 
+	i = 0;
 	if (!shell->env)
 	{
 		ft_putendl_fd("env: No environment variables found", STDERR_FILENO);
