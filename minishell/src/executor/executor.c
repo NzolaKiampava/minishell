@@ -49,42 +49,77 @@ static int	run_builtin_command(t_command *cmd, t_shell *shell,
 	return (status);
 }
 
-static void	execute_child(t_command *cmd, t_shell *shell)
+static void execute_child(t_command *cmd, t_shell *shell)
 {
-	char	*path;
+    char *path;
 
-	if (!handle_redirections(cmd))
-		exit(1);
-	path = get_command_path(cmd->args[0], shell->env);
-	if (!path)
-	{
-		print_error("Command not found");
-		exit(127);
-	}
-	execve(path, cmd->args, shell->env);
-	free(path);
-	exit(1);
+    // Se estiver em modo append, configura os sinais
+    if (cmd->append_mode)
+    {
+        signal(SIGINT, SIG_DFL);
+        signal(SIGQUIT, SIG_DFL);
+    }
+
+    if (!handle_redirections(cmd))
+        exit(1);
+    path = get_command_path(cmd->args[0], shell->env);
+    if (!path)
+    {
+        print_error("Command not found");
+        exit(127);
+    }
+    execve(path, cmd->args, shell->env);
+    free(path);
+    exit(1);
 }
 
-static int	execute_single_command(t_command *cmd, t_shell *shell)
+static int execute_single_command(t_command *cmd, t_shell *shell)
 {
-	int			status;
-	int			saved_stdout;
-	int			saved_stdin;
-	pid_t		pid;
+    int     status;
+    int     saved_stdout;
+    int     saved_stdin;
+    pid_t   pid;
+    struct sigaction sa_old;
 
-	saved_stdout = dup(STDOUT_FILENO);
-	saved_stdin = dup(STDIN_FILENO);
-	if (is_builtin(cmd->args[0]))
-		return (run_builtin_command(cmd, shell, saved_stdout, saved_stdin));
-	pid = fork();
-	if (pid == -1)
-		return (1);
-	if (pid == 0)
-		execute_child(cmd, shell);
-	waitpid(pid, &status, 0);
-	return (WEXITSTATUS(status));
+    saved_stdout = dup(STDOUT_FILENO);
+    saved_stdin = dup(STDIN_FILENO);
+    
+    if (is_builtin(cmd->args[0]))
+        return (run_builtin_command(cmd, shell, saved_stdout, saved_stdin));
+
+    // Se estiver em modo append, salva o handler atual e ignora SIGINT
+    if (cmd->append_mode)
+    {
+        sigaction(SIGINT, NULL, &sa_old);  // Salva o handler atual
+        signal(SIGINT, SIG_IGN);           // Ignora SIGINT no pai
+    }
+
+    pid = fork();
+    if (pid == -1)
+        return (1);
+    if (pid == 0)
+        execute_child(cmd, shell);
+        
+    waitpid(pid, &status, 0);
+    
+    // Restaura o handler original se estiver em modo append
+    if (cmd->append_mode)
+        sigaction(SIGINT, &sa_old, NULL);
+
+    if (WIFSIGNALED(status))
+    {
+        if (WTERMSIG(status) == SIGINT)
+        {
+            write(STDOUT_FILENO, "\n", 1);
+            return (130);
+        }
+        else if (WTERMSIG(status) == SIGQUIT)
+            return (131);
+    }
+    
+    return (WEXITSTATUS(status));
 }
+
 
 int	execute_commands(t_shell *shell)
 {
