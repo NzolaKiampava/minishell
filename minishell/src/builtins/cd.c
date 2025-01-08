@@ -28,10 +28,11 @@ static char	*expand_tilde(char *path, t_shell *shell)
 	return (expanded_path);
 }
 
-static char	*get_home_or_oldpwd(char **args, t_shell *shell)
+static char	*get_home_or_oldpwd(char **args, t_shell *shell, int *needs_free)
 {
 	char	*path;
 
+	*needs_free = 0;
 	if (!args[1])
 	{
 		path = get_env_value(shell->env, "HOME");
@@ -54,12 +55,13 @@ static char	*get_home_or_oldpwd(char **args, t_shell *shell)
 	return (path);
 }
 
-static char	*get_cd_path(char **args, t_shell *shell)
+static char	*get_cd_path(char **args, t_shell *shell, int *needs_free)
 {
 	char	*path;
 
 	if (!args[1] || ft_strcmp(args[1], "-") == 0)
-		return (get_home_or_oldpwd(args, shell));
+		return (get_home_or_oldpwd(args, shell, needs_free));
+	*needs_free = 1;
 	path = expand_tilde(args[1], shell);
 	if (!path)
 	{
@@ -69,37 +71,42 @@ static char	*get_cd_path(char **args, t_shell *shell)
 	return (path);
 }
 
-static int	update_directory(char *path, char **args,
-								t_shell *shell, char *old_dir)
+static int	update_directory(char *path, t_shell *shell,
+								char *old_dir, int needs_free)
 {
+	int	ret;
+
+	ret = EXIT_SUCCESS;
 	if (chdir(path) != 0)
 	{
 		ft_putstr_fd("cd: ", STDERR_FILENO);
 		perror(path);
-		if (args[1] && args[1][0] == '~')
-			free(path);
-		return (EXIT_FAILURE);
+		ret = EXIT_FAILURE;
 	}
-	if (args[1] && args[1][0] == '~')
+	else
+	{
+		set_env_value(&shell->env, "OLDPWD", old_dir);
+		if (getcwd(old_dir, 1024) != NULL)
+			set_env_value(&shell->env, "PWD", old_dir);
+	}
+	if (needs_free)
 		free(path);
-	set_env_value(&shell->env, "OLDPWD", old_dir);
-	if (getcwd(old_dir, 1024) != NULL)
-		set_env_value(&shell->env, "PWD", old_dir);
-	return (EXIT_SUCCESS);
+	return (ret);
 }
 
 int	ft_cd(char **args, t_shell *shell)
 {
-	char	*path;
-	char	current_dir[1024];
+	char		*path;
+	char		current_dir[1024];
+	int			needs_free;
 
 	if (getcwd(current_dir, sizeof(current_dir)) == NULL)
 	{
 		perror("cd: error getting current directory");
 		return (EXIT_FAILURE);
 	}
-	path = get_cd_path(args, shell);
+	path = get_cd_path(args, shell, &needs_free);
 	if (!path)
 		return (EXIT_FAILURE);
-	return (update_directory(path, args, shell, current_dir));
+	return (update_directory(path, shell, current_dir, needs_free));
 }
