@@ -12,23 +12,35 @@
 
 #include "minishell.h"
 
-// Handle CTRL+C
-void	handle_signal(int signo)
+void handle_signal(int signo)
 {
-	if (signo == SIGINT)
-	{
-		g_signal_received = 1;
-		printf("\n");
-		rl_replace_line("", 0);
-		rl_on_new_line();
-		rl_redisplay();
-	}
+    if (signo == SIGINT)
+    {
+        g_signal_received = 1;
+        write(STDOUT_FILENO, "\n", 1);
+    }
 }
 
-// Handle SIGINT (CTRL+C)
-// Ignore SIGQUIT (CTRL+\)
-void	setup_signals(void)
+void handle_parent_signal(int signo)
 {
-	signal(SIGINT, handle_signal);
-	signal(SIGQUIT, SIG_IGN);
+    if (signo == SIGINT)
+    {
+        g_signal_received = 1;
+        write(STDOUT_FILENO, "\n", 1);
+        rl_replace_line("", 0);
+        rl_on_new_line();
+        rl_redisplay();
+    }
+}
+
+void setup_signals(void)
+{
+    struct sigaction sa;
+    
+    sa.sa_handler = handle_parent_signal;
+    sa.sa_flags = SA_RESTART;
+    sigemptyset(&sa.sa_mask);
+    
+    sigaction(SIGINT, &sa, NULL);
+    signal(SIGQUIT, SIG_IGN);
 }
