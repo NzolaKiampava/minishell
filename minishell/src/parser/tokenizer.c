@@ -12,6 +12,32 @@
 
 #include "minishell.h"
 
+static int validate_quotes(char *input)
+{
+    int i;
+    char quote_type;
+    int in_quote;
+
+    i = 0;
+    in_quote = 0;
+    quote_type = 0;
+    while (input[i])
+    {
+        if ((input[i] == '\'' || input[i] == '\"') && !in_quote)
+        {
+            in_quote = 1;
+            quote_type = input[i];
+        }
+        else if (in_quote && input[i] == quote_type)
+        {
+            in_quote = 0;
+            quote_type = 0;
+        }
+        i++;
+    }
+    return (!in_quote);
+}
+
 static char	*get_word(char *input, int *i, t_token *head)
 {
 	char	*result;
@@ -92,21 +118,31 @@ static int	process_token(char *input, int *i, t_token **head)
 	return (1);
 }
 
-t_token	*tokenize_input(char *input)
+t_token *tokenize_input(char *input)
 {
-	t_token	*head;
-	int		i;
+    t_token *head;
+    int     i;
 
-	head = NULL;
-	i = 0;
-	while (input[i])
-	{
-		while (input[i] && is_space(input[i]))
-			i++;
-		if (!input[i])
-			break ;
-		if (!process_token(input, &i, &head))
-			return (NULL);
-	}
-	return (head);
+    if (!validate_quotes(input))
+    {
+        ft_putendl_fd("minishell: syntax error: unclosed quotes", STDERR_FILENO);
+        return (NULL);
+    }
+    head = NULL;
+    i = 0;
+    while (input[i])
+    {
+        while (input[i] && is_space(input[i]))
+            i++;
+        if (!input[i])
+            break;
+        if (!process_token(input, &i, &head))
+        {
+            if (input[i] == '\'' || input[i] == '"')
+                ft_putendl_fd("minishell: syntax error: unclosed quotes", STDERR_FILENO);
+            return (NULL);
+        }
+    }
+    return (head);
 }
+
