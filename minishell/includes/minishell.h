@@ -99,7 +99,6 @@ void		expand_variables(t_command *cmd, t_shell *shell);
 int			execute_commands(t_shell *shell);
 int			execute_piped_commands(t_command *cmd, t_shell *shell);
 int			handle_redirections(t_command *cmd);
-char		*get_command_path(char *cmd, char **env);
 
 /* Builtin functions */
 int			is_builtin(char *cmd);
@@ -116,6 +115,7 @@ char		*expand_env_vars(char *str, t_shell *shell);
 /* Signal handlers */
 void		setup_signals(void);
 void		handle_signal(int signo);
+int			handle_signal_status(int status);
 
 /* Environment functions */
 char		**init_env(char **env);
@@ -135,6 +135,7 @@ int			validate_redirect_syntax(t_token *token);
 int			validate_pipe_syntax(t_token *tokens);
 char		*search_in_path(char **paths, char *cmd);
 void		update_quotes(char c, int quotes[2]);
+char		*get_command_path(char *cmd, char **env);
 
 /* Tokenizer Utils Functions */
 void		add_token(t_token **head, char *value, t_token_type type);
@@ -158,6 +159,12 @@ char		*expand_single_var(char *str, int *i, t_shell *shell);
 /* Pipe Utils Functins */
 int			setup_pipes(int curr_pipe[2], int prev_pipe[2], t_command *current);
 void		redirect_pipes(int prev_pipe[2], int curr_pipe[2]);
+
+/* EXPORT UTILS FUNCTIONS */
+char		*find_equal_sign(char *str);
+int			is_valid_name(const char *name);
+int			handle_invalid_identifier(char *arg);
+int			add_new_env_var(char ***env, char *new_var);
 
 /* UTILS */
 int			is_space(char c);
