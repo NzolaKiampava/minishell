@@ -59,7 +59,7 @@ static int	print_env_vars(t_shell *shell)
 	free(sorted_env);
 	return (EXIT_SUCCESS);
 }
-
+/*
 static int	handle_equal_case(char *arg, char *equal_pos, t_shell *shell)
 {
 	char	equal_char;
@@ -82,26 +82,43 @@ static int	handle_equal_case(char *arg, char *equal_pos, t_shell *shell)
 	}
 	return (EXIT_SUCCESS);
 }
-
-static int	process_export_arg(char *arg, t_shell *shell)
+*/
+static int process_export_arg(char *arg, t_shell *shell)
 {
-	char	*equal_pos;
-	int		status;
+    char    *equal_pos;
+    char    equal_char;
+    int     status;
 
-	equal_pos = find_equal_sign(arg);
-	if (equal_pos)
-		return (handle_equal_case(arg, equal_pos, shell));
-	if (!is_valid_name(arg))
-		return (handle_invalid_identifier(arg));
-	status = set_env_value(&shell->env, arg, "");
-	if (!status)
-	{
-		ft_putstr_fd("minishell: export: memory allocation error\n",
-			STDERR_FILENO);
-		return (EXIT_FAILURE);
-	}
-	return (EXIT_SUCCESS);
+    equal_pos = find_equal_sign(arg);
+    if (equal_pos)
+    {
+        equal_char = *equal_pos;
+        *equal_pos = '\0';
+        
+        if (!is_valid_name(arg))
+        {
+            *equal_pos = equal_char;
+            return (handle_invalid_identifier(arg));
+        }
+        
+        status = set_env_value(&shell->env, arg, equal_pos + 1);
+        *equal_pos = equal_char;
+        
+        if (!status)
+        {
+            ft_putstr_fd("minishell: export: memory allocation error\n", 
+                STDERR_FILENO);
+            return (EXIT_FAILURE);
+        }
+    }
+    else if (!is_valid_name(arg))
+        return (handle_invalid_identifier(arg));
+    else
+        status = set_env_value(&shell->env, arg, NULL); // Passa NULL quando não há '='
+    
+    return (EXIT_SUCCESS);
 }
+
 
 int	ft_export(char **args, t_shell *shell)
 {
