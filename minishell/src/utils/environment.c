@@ -59,21 +59,30 @@ char	*get_env_value(char **env, char *key)
 	return (NULL);
 }
 
-static char	*create_env_var(const char *key, char *value)
+static char *create_env_var(const char *key, const char *value)
 {
-	char	*new_var;
-	char	*full_var;
+    char    *new_var;
+    size_t  total_len;
 
-	new_var = ft_strjoin(key, "=");
-	if (!new_var)
-		return (NULL);
-	full_var = ft_strjoin(new_var, value);
-	free(new_var);
-	if (!full_var)
-		return (NULL);
-	return (full_var);
+    if (!value) // Se não houver valor, apenas retorna a chave
+        return (ft_strdup(key));
+
+    total_len = ft_strlen(key) + ft_strlen(value) + 2;
+    new_var = (char *)malloc(total_len);
+    if (!new_var)
+        return (NULL);
+
+    ft_strlcpy(new_var, key, total_len);
+    if (*value || value[0] == '=') // Só adiciona = se houver valor ou se = foi explicitamente fornecido
+    {
+        ft_strlcat(new_var, "=", total_len);
+        ft_strlcat(new_var, value, total_len);
+    }
+
+    return (new_var);
 }
 
+/*
 static int	update_existing_env(char **env, char *key, char *value, int key_len)
 {
 	char		*new_var;
@@ -95,19 +104,62 @@ static int	update_existing_env(char **env, char *key, char *value, int key_len)
 	}
 	return (-1);
 }
+*/
 
-int	set_env_value(char ***env, char *key, char *value)
+int set_env_value(char ***env, char *key, char *value)
 {
-	char		*new_var;
-	int			status;
+    char    *new_var;
+    int     key_len;
+    int     i;
+    //int     has_equals;
 
-	if (!env || !key)
-		return (0);
-	status = update_existing_env(*env, key, value, ft_strlen(key));
-	if (status >= 0)
-		return (status);
-	new_var = create_env_var(key, value);
-	if (!new_var)
-		return (0);
-	return (add_new_env_var(env, new_var));
+    if (!env || !key)
+        return (0);
+
+    //has_equals = (value != NULL);
+    key_len = ft_strlen(key);
+    i = 0;
+
+    // Procura variável existente
+    while ((*env)[i])
+    {
+        if (ft_strncmp((*env)[i], key, key_len) == 0 && 
+            ((*env)[i][key_len] == '=' || (*env)[i][key_len] == '\0'))
+        {
+            new_var = create_env_var(key, value);
+            if (!new_var)
+                return (0);
+            free((*env)[i]);
+            (*env)[i] = new_var;
+            return (1);
+        }
+        i++;
+    }
+
+    // Cria nova variável
+    new_var = create_env_var(key, value);
+    if (!new_var)
+        return (0);
+
+    char **new_env = (char **)malloc(sizeof(char *) * (i + 2));
+    if (!new_env)
+    {
+        free(new_var);
+        return (0);
+    }
+
+    int j = 0;
+    while (j < i)
+    {
+        new_env[j] = (*env)[j];
+        j++;
+    }
+
+    new_env[i] = new_var;
+    new_env[i + 1] = NULL;
+
+    free(*env);
+    *env = new_env;
+
+    return (1);
 }
