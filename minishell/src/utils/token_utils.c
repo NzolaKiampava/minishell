@@ -45,31 +45,32 @@ char	*prepare_quote_extraction(char *input, int *i, int preserve_quotes,
 	return (input);
 }
 
-char	*get_content_between_quotes(char *input, int *i, char quote_type,
-	int preserve_quotes)
+char *get_content_between_quotes(char *input, int *i, char quote_type, int preserve_quotes)
 {
-	char		*content;
-	char		*result;
-	int			start;
-	int			len;
+    int     start;
+    int     len;
+    char    *content;
 
-	input = prepare_quote_extraction(input, i, preserve_quotes, &start);
-	len = 0;
-	while (input[*i + len] && input[*i + len] != quote_type)
-		len++;
-	if (!input[*i + len])
-		return (NULL);
-	if (preserve_quotes)
-		len++;
-	if (preserve_quotes)
-		content = ft_substr(input, start, len + 1);
-	else
-		content = ft_substr(input, start, len);
-	*i += len + 1;
-	if (!content)
-		return (NULL);
-	result = content;
-	return (result);
+    start = *i;
+    (*i)++;
+    len = 0;
+    while (input[*i + len] && input[*i + len] != quote_type)
+        len++;
+    
+    if (!input[*i + len])  // Quote is not closed
+        return (NULL);
+
+    if (preserve_quotes)
+    {
+        content = ft_substr(input, start, len + 2);
+        (*i) += len + 1;
+    }
+    else
+    {
+        content = ft_substr(input, *i, len);
+        (*i) += len + 1;
+    }
+    return (content);
 }
 
 char	*get_unquoted_content(char *input, int *i)
