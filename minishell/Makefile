@@ -34,7 +34,8 @@ SRCS = $(SRCS_DIR)/main.c \
        $(SRCS_DIR)/utils/token_utils.c \
        $(SRCS_DIR)/utils/token2_utils.c \
        $(SRCS_DIR)/utils/pipe_utils.c \
-       $(SRCS_DIR)/utils/expand_utils.c
+       $(SRCS_DIR)/utils/expand_utils.c \
+       $(SRCS_DIR)/utils/export_utils.c \
 
 # Object files
 OBJS = $(SRCS:$(SRCS_DIR)/%.c=$(OBJ_DIR)/%.o)
