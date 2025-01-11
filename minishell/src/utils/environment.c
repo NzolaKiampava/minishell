@@ -73,11 +73,8 @@ static char *create_env_var(const char *key, const char *value)
         return (NULL);
 
     ft_strlcpy(new_var, key, total_len);
-    if (*value || value[0] == '=') // Só adiciona = se houver valor ou se = foi explicitamente fornecido
-    {
-        ft_strlcat(new_var, "=", total_len);
-        ft_strlcat(new_var, value, total_len);
-    }
+	ft_strlcat(new_var, "=", total_len);
+	ft_strlcat(new_var, value, total_len);
 
     return (new_var);
 }
