@@ -166,6 +166,11 @@ int			is_valid_name(const char *name);
 int			handle_invalid_identifier(char *arg);
 int			add_new_env_var(char ***env, char *new_var);
 
+/* REDIRECTIONS UTILS FUNCTIONS */
+int			write_heredoc_content(int *pipe_fd, char *delimiter);
+int			cleanup_on_error(int saved_stdout, int saved_stdin,
+				int fd, char *message);
+
 /* UTILS */
 int			is_space(char c);
 int			is_operator(char c);
