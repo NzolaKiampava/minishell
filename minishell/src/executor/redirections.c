@@ -26,50 +26,90 @@ static int	cleanup_on_error(int saved_stdout, int saved_stdin,
 	return (0);
 }
 
-static int	handle_heredoc(t_command *cmd)
+static int handle_heredoc(t_command *cmd)
 {
-	int			pipe_fd[2];
-	char		*line;
-	char		*delimiter;
+    int pipe_fd[2];
+    char *line;
+    char *delimiter;
+    struct sigaction sa_heredoc, sa_old;
 
-	if (pipe(pipe_fd) == -1)
-		return (-1);
-	delimiter = cmd->input_file;
-	while (1)
-	{
-		line = readline("> ");
-		if (!line || !ft_strcmp(line, delimiter))
-		{
-			free(line);
-			break ;
-		}
-		write(pipe_fd[1], line, ft_strlen(line));
-		write(pipe_fd[1], "\n", 1);
-		free(line);
-	}
-	close(pipe_fd[1]);
-	return (pipe_fd[0]);
+    if (pipe(pipe_fd) == -1)
+        return (-1);
+
+    // Configura handler específico para heredoc
+    sa_heredoc.sa_handler = SIG_DFL;  // Usa o handler padrão para SIGINT
+    sa_heredoc.sa_flags = 0;
+    sigemptyset(&sa_heredoc.sa_mask);
+    sigaction(SIGINT, &sa_heredoc, &sa_old);
+
+    delimiter = cmd->input_file;
+    g_signal_received = 0;  // Reset do sinal antes de começar
+
+    while (1)
+    {
+        line = readline("> ");
+        // Se line é NULL (CTRL+D) ou recebeu SIGINT ou encontrou delimitador
+        if (!line || g_signal_received || (line && !ft_strcmp(line, delimiter)))
+        {
+            free(line);
+            break;
+        }
+        
+        if (pipe_fd[1] != -1)
+        {
+            write(pipe_fd[1], line, ft_strlen(line));
+            write(pipe_fd[1], "\n", 1);
+        }
+        free(line);
+    }
+
+    // Restaura o handler original
+    sigaction(SIGINT, &sa_old, NULL);
+    close(pipe_fd[1]);
+
+    // Se CTRL+C foi pressionado
+    if (g_signal_received)
+    {
+        close(pipe_fd[0]);
+        return (-1);
+    }
+
+    return (pipe_fd[0]);
 }
 
-static int	handle_input_redirection(t_command *cmd,
-	int saved_stdin, int saved_stdout)
+
+static int handle_input_redirection(t_command *cmd, int saved_stdin, int saved_stdout)
 {
-	if (cmd->input_fd == -2)
-		cmd->input_fd = handle_heredoc(cmd);
-	else
-		cmd->input_fd = open(cmd->input_file, O_RDONLY);
-	if (cmd->input_fd == -1)
-	{
-		print_error("No such file or directory");
-		return (cleanup_on_error(saved_stdout, saved_stdin,
-				cmd->input_fd, NULL));
-	}
-	if (dup2(cmd->input_fd, STDIN_FILENO) == -1)
-		return (cleanup_on_error(saved_stdout, saved_stdin,
-				cmd->input_fd, NULL));
-	close(cmd->input_fd);
-	return (1);
+    if (cmd->input_fd == -2)
+    {
+        cmd->input_fd = handle_heredoc(cmd);
+        if (cmd->input_fd == -1)
+        {
+            if (g_signal_received)
+            {
+                g_signal_received = 0;  // Reset do sinal
+                return (0);
+            }
+            print_error("Heredoc error");
+            return (cleanup_on_error(saved_stdout, saved_stdin, -1, NULL));
+        }
+    }
+    else
+        cmd->input_fd = open(cmd->input_file, O_RDONLY);
+
+    if (cmd->input_fd == -1)
+    {
+        print_error("No such file or directory");
+        return (cleanup_on_error(saved_stdout, saved_stdin, cmd->input_fd, NULL));
+    }
+
+    if (dup2(cmd->input_fd, STDIN_FILENO) == -1)
+        return (cleanup_on_error(saved_stdout, saved_stdin, cmd->input_fd, NULL));
+
+    close(cmd->input_fd);
+    return (1);
 }
+
 
 static int	handle_output_redirection(t_command *cmd,
 	int saved_stdin, int saved_stdout)
