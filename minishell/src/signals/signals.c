@@ -12,36 +12,38 @@
 
 #include "minishell.h"
 
-void	handle_signal(int signo)
+void handle_signal(int signo)
 {
-	if (signo == SIGINT)
-	{
-		g_signal_received = SIGINT;
-		write(STDOUT_FILENO, "\n", 1);
-	}
+    if (signo == SIGINT)
+    {
+        g_signal_received = 1;
+        write(STDOUT_FILENO, "\n", 1);
+        close(STDIN_FILENO);  // Força o readline a retornar NULL
+    }
 }
 
-void	handle_parent_signal(int signo)
+void handle_parent_signal(int signo)
 {
-	if (signo == SIGINT)
-	{
-		g_signal_received = SIGINT;
-		write(STDOUT_FILENO, "\n", 1);
-		rl_replace_line("", 0);
-		rl_on_new_line();
-		rl_redisplay();
-	}
+    if (signo == SIGINT)
+    {
+        g_signal_received = 1;
+        write(STDOUT_FILENO, "\n", 1);
+        rl_replace_line("", 0);
+        rl_on_new_line();
+        rl_redisplay();
+    }
 }
 
-void	setup_signals(void)
+void setup_signals(void)
 {
-	struct sigaction	sa;
-
-	sa.sa_handler = handle_parent_signal;
-	sa.sa_flags = SA_RESTART;
-	sigemptyset(&sa.sa_mask);
-	sigaction(SIGINT, &sa, NULL);
-	signal(SIGQUIT, SIG_IGN);
+    struct sigaction sa;
+    
+    sa.sa_handler = handle_parent_signal;
+    sa.sa_flags = SA_RESTART;
+    sigemptyset(&sa.sa_mask);
+    
+    sigaction(SIGINT, &sa, NULL);
+    signal(SIGQUIT, SIG_IGN);
 }
 
 int	handle_signal_status(int status)
