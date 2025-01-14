@@ -99,8 +99,6 @@ static int	process_export_arg(char *arg, t_shell *shell)
 			return (EXIT_FAILURE);
 		}
 	}
-	else
-		status = set_env_value(&shell->env, arg, NULL);
 	return (EXIT_SUCCESS);
 }
 
