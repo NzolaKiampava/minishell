@@ -20,6 +20,11 @@ void	handle_signal(int signo)
 		write(STDOUT_FILENO, "\n", 1);
 		close(STDIN_FILENO);
 	}
+	else if (signo == SIGQUIT)
+	{
+		g_signal_received = SIGQUIT;
+		write(STDOUT_FILENO, " Quit (core dumped)\n", 20);
+	}
 }
 
 void	handle_parent_signal(int signo)
@@ -29,6 +34,11 @@ void	handle_parent_signal(int signo)
 		g_signal_received = SIGINT;
 		write(STDOUT_FILENO, "\n", 1);
 		rl_replace_line("", 0);
+		rl_on_new_line();
+		rl_redisplay();
+	}
+	else if (signo == SIGQUIT)
+	{
 		rl_on_new_line();
 		rl_redisplay();
 	}
@@ -42,7 +52,7 @@ void	setup_signals(void)
 	sa.sa_flags = SA_RESTART;
 	sigemptyset(&sa.sa_mask);
 	sigaction(SIGINT, &sa, NULL);
-	signal(SIGQUIT, SIG_IGN);
+	sigaction(SIGQUIT, &sa, NULL);
 }
 
 int	handle_signal_status(int status)
@@ -55,7 +65,10 @@ int	handle_signal_status(int status)
 			return (130);
 		}
 		else if (WTERMSIG(status) == SIGQUIT)
+		{
+			write(STDOUT_FILENO, " Quit (core dumped)\n", 20);
 			return (131);
+		}
 	}
 	return (WEXITSTATUS(status));
 }
