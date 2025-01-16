@@ -18,12 +18,6 @@ int	validate_redirect_syntax(t_token *token)
 		return (0);
 	if (token->next->type != TOKEN_WORD)
 		return (0);
-	if (token->next->next
-		&& (token->next->next->type == TOKEN_REDIRECT_IN
-			|| token->next->next->type == TOKEN_REDIRECT_OUT
-			|| token->next->next->type == TOKEN_REDIRECT_APPEND
-			|| token->next->next->type == TOKEN_HEREDOC))
-		return (0);
 	return (1);
 }
 
