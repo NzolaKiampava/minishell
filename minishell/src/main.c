@@ -53,6 +53,11 @@ static void	process_input(t_shell *shell, char *input)
 		shell->running = 0;
 		return ;
 	}
+	if (g_signal_received == SIGINT)
+	{
+		shell->exit_status = 130;
+		g_signal_received = 0;
+	}
 	handle_input_processing(shell, input);
 	free(input);
 }
@@ -69,6 +74,11 @@ int	main(int argc, char **argv, char **env)
 	while (shell.running)
 	{
 		input = readline("minishell$ ");
+		if (!input && g_signal_received == SIGINT)
+		{
+			shell.exit_status = 130;
+			g_signal_received = 0;
+		}
 		process_input(&shell, input);
 	}
 	free_shell(&shell);
