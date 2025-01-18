@@ -23,7 +23,7 @@ void	handle_signal(int signo)
 	else if (signo == SIGQUIT)
 	{
 		g_signal_received = SIGQUIT;
-		write(STDOUT_FILENO, " Quit (core dumped)\n", 20);
+		write(STDOUT_FILENO, " quit (core dumped)\n", 20);
 	}
 }
 
@@ -66,7 +66,7 @@ int	handle_signal_status(int status)
 		}
 		else if (WTERMSIG(status) == SIGQUIT)
 		{
-			write(STDOUT_FILENO, " Quit (core dumped)\n", 20);
+			write(STDOUT_FILENO, " quit (core dumped)\n", 20);
 			return (131);
 		}
 	}
