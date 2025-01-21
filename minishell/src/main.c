@@ -71,6 +71,7 @@ int	main(int argc, char **argv, char **env)
 	(void)argv;
 	initialize_shell(&shell, env);
 	setup_signals();
+	rl_outstream = stderr;
 	while (shell.running)
 	{
 		input = readline("minishell$ ");
