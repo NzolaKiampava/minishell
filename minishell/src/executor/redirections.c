@@ -117,12 +117,16 @@ int	handle_redirections(t_command *cmd)
 	saved_stdin = dup(STDIN_FILENO);
 	if (saved_stdout == -1 || saved_stdin == -1)
 		return (cleanup_on_error(saved_stdout, saved_stdin, -1, NULL));
-	if (cmd->input_file
-		&& !handle_input_redirection(cmd, saved_stdin, saved_stdout))
-		return (0);
-	if (cmd->output_file
-		&& !handle_output_redirection(cmd, saved_stdin, saved_stdout))
-		return (0);
+	while (cmd)
+	{
+		if (cmd->input_file
+			&& !handle_input_redirection(cmd, saved_stdin, saved_stdout))
+			return (0);
+		if (cmd->output_file
+			&& !handle_output_redirection(cmd, saved_stdin, saved_stdout))
+			return (0);
+		cmd = cmd->next;
+	}
 	close(saved_stdout);
 	close(saved_stdin);
 	return (1);
