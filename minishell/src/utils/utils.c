@@ -36,6 +36,7 @@ t_command	*create_command(void)
 	cmd->output_fd = -1;
 	cmd->append_mode = 0;
 	cmd->next = NULL;
+	cmd->prev = NULL;
 	return (cmd);
 }
 
