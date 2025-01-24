@@ -68,14 +68,20 @@ char	*get_command_path(char *cmd, char **env)
 {
 	char	*path;
 	char	**paths;
+	char	*full_path;
 
-	if (cmd[0] == '/' || cmd[0] == '.')
-		return (ft_strdup(cmd));
+	if (ft_strchr(cmd, '/'))
+	{
+		if (access(cmd, X_OK) == 0)
+			return (ft_strdup(cmd));
+		return (NULL);
+	}
 	path = get_env_value(env, "PATH");
 	if (!path)
 		return (NULL);
 	paths = ft_split(path, ':');
 	if (!paths)
 		return (NULL);
-	return (search_in_path(paths, cmd));
+	full_path = search_in_path(paths, cmd);
+	return (full_path);
 }
