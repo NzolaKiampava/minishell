@@ -41,20 +41,30 @@ static int	handle_redirect_type(t_command *cmd, t_token_type type, char *value)
 
 static int	handle_redirect(t_command *cmd, t_token **token)
 {
-	t_token_type	type;
+	t_command	*current_cmd;
+	t_command	*new_cmd;
 
 	if (!validate_redirect_syntax(*token))
 	{
 		print_error("syntax error near unexpected token");
 		return (0);
 	}
-	type = (*token)->type;
-	*token = (*token)->next;
-	if (!handle_redirect_type(cmd, type, (*token)->value))
+	current_cmd = cmd;
+	while (current_cmd->next)
+		current_cmd = current_cmd->next;
+	if ((*token)->type == TOKEN_REDIRECT_OUT)
+	{
+		new_cmd = create_command();
+		if (!new_cmd)
+			return (0);
+		current_cmd->next = new_cmd;
+		new_cmd->prev = current_cmd;
+		current_cmd = new_cmd;
+	}
+	if (!handle_redirect_type(current_cmd,
+			(*token)->type, (*token)->next->value))
 		return (0);
-	if (!cmd->input_file && !cmd->output_file)
-		return (0);
-	*token = (*token)->next;
+	*token = (*token)->next->next;
 	return (1);
 }
 
