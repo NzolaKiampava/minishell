@@ -67,6 +67,7 @@ typedef struct s_command
 	int					output_fd;
 	int					append_mode;
 	struct s_command	*next;
+	struct s_command	*prev;
 }	t_command;
 
 /*
