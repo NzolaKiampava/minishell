@@ -98,6 +98,5 @@ int	should_preserve_quotes(t_token *head)
 	current = head;
 	while (current->next)
 		current = current->next;
-	return (current->type == TOKEN_WORD
-		|| ft_strcmp(current->value, "echo") == 0);
+	return (current->type == TOKEN_WORD);
 }
