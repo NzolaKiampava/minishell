@@ -41,6 +41,8 @@ char	*process_word_part(char *input, int *i, char *result,
 	if (input[*i] == '\'' || input[*i] == '"')
 	{
 		quote_type = input[*i];
+		if (quote_type == '\'')
+			preserve_quotes = 1;
 		next_part = get_content_between_quotes(input, i, quote_type,
 				preserve_quotes);
 	}
