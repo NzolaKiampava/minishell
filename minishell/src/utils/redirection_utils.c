@@ -12,9 +12,48 @@
 
 #include "minishell.h"
 
-int	write_heredoc_content(int *pipe_fd, char *delimiter)
+static char	*handle_variable_expansion(char *line, int *i, t_shell *shell,
+	char *result)
+{
+	char	*var_value;
+	char	*temp;
+
+	var_value = expand_single_var(line, i, shell);
+	if (var_value)
+	{
+		temp = result;
+		result = ft_strjoin(result, var_value);
+		free(temp);
+		free(var_value);
+	}
+	return (result);
+}
+
+static char	*expand_heredoc_line(char *line, t_shell *shell)
+{
+	char		*result;
+	int			i;
+
+	result = ft_strdup("");
+	i = 0;
+	while (line[i])
+	{
+		if (line[i] == '$')
+			result = handle_variable_expansion(line, &i, shell, result);
+		else
+		{
+			result = append_character(result, line[i]);
+			i++;
+		}
+	}
+	free(line);
+	return (result);
+}
+
+int	write_heredoc_content(int *pipe_fd, char *delimiter, t_shell *shell)
 {
 	char	*line;
+	char	*expanded_line;
 
 	while (1)
 	{
@@ -25,12 +64,13 @@ int	write_heredoc_content(int *pipe_fd, char *delimiter)
 			free(line);
 			break ;
 		}
+		expanded_line = expand_heredoc_line(line, shell);
 		if (pipe_fd[1] != -1)
 		{
-			write(pipe_fd[1], line, ft_strlen(line));
+			write(pipe_fd[1], expanded_line, ft_strlen(expanded_line));
 			write(pipe_fd[1], "\n", 1);
 		}
-		free(line);
+		free(expanded_line);
 	}
 	return (g_signal_received);
 }
