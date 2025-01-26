@@ -82,3 +82,15 @@ int	add_new_env_var(char ***env, char *new_var)
 	*env = new_env;
 	return (1);
 }
+
+char	*append_character(char *result, char c)
+{
+	char	temp[2];
+	char	*temp_result;
+
+	temp[0] = c;
+	temp[1] = '\0';
+	temp_result = ft_strjoin(result, temp);
+	free(result);
+	return (temp_result);
+}
