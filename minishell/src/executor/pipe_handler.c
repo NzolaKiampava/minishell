@@ -20,7 +20,7 @@ static void	handle_child_process(int prev_pipe[2], int curr_pipe[2],
 	if (!cmd || !cmd->args || !cmd->args[0])
 		exit(1);
 	redirect_pipes(prev_pipe, curr_pipe);
-	if (!handle_redirections(cmd))
+	if (!handle_redirections(cmd, shell))
 		exit(1);
 	if (is_builtin(cmd->args[0]))
 		exit(execute_builtin(cmd, shell));
