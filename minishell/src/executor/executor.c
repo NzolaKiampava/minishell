@@ -17,7 +17,7 @@ static int	run_builtin_command(t_command *cmd, t_shell *shell,
 {
 	int	status;
 
-	if (!handle_redirections(cmd))
+	if (!handle_redirections(cmd, shell))
 	{
 		dup2(saved_stdout, STDOUT_FILENO);
 		dup2(saved_stdin, STDIN_FILENO);
@@ -42,7 +42,7 @@ static void	execute_child(t_command *cmd, t_shell *shell)
 		signal(SIGINT, SIG_DFL);
 		signal(SIGQUIT, SIG_DFL);
 	}
-	if (!handle_redirections(cmd))
+	if (!handle_redirections(cmd, shell))
 		exit(1);
 	path = get_command_path(cmd->args[0], shell->env);
 	if (!path)
