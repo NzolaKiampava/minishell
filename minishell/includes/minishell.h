@@ -99,7 +99,7 @@ void		expand_variables(t_command *cmd, t_shell *shell);
 /* Executor functions */
 int			execute_commands(t_shell *shell);
 int			execute_piped_commands(t_command *cmd, t_shell *shell);
-int			handle_redirections(t_command *cmd);
+int			handle_redirections(t_command *cmd, t_shell *shell);
 
 /* Builtin functions */
 int			is_builtin(char *cmd);
@@ -163,12 +163,14 @@ void		redirect_pipes(int prev_pipe[2], int curr_pipe[2]);
 
 /* EXPORT UTILS FUNCTIONS */
 char		*find_equal_sign(char *str);
+char		*append_character(char *result, char c);
 int			is_valid_name(const char *name);
 int			handle_invalid_identifier(char *arg);
 int			add_new_env_var(char ***env, char *new_var);
 
 /* REDIRECTIONS UTILS FUNCTIONS */
-int			write_heredoc_content(int *pipe_fd, char *delimiter);
+int			write_heredoc_content(int *pipe_fd, char *delimiter,
+				t_shell *shell);
 int			cleanup_on_error(int saved_stdout, int saved_stdin,
 				int fd, char *message);
 
