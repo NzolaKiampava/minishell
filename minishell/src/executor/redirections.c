@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-static int	handle_heredoc(t_command *cmd)
+static int	handle_heredoc(t_command *cmd, t_shell *shell)
 {
 	struct sigaction		sa_heredoc;
 	struct sigaction		sa_old;
@@ -26,7 +26,7 @@ static int	handle_heredoc(t_command *cmd)
 	sigemptyset(&sa_heredoc.sa_mask);
 	sigaction(SIGINT, &sa_heredoc, &sa_old);
 	g_signal_received = 0;
-	signal_received = write_heredoc_content(pipe_fd, cmd->input_file);
+	signal_received = write_heredoc_content(pipe_fd, cmd->input_file, shell);
 	sigaction(SIGINT, &sa_old, NULL);
 	close(pipe_fd[1]);
 	if (signal_received)
@@ -37,10 +37,10 @@ static int	handle_heredoc(t_command *cmd)
 	return (pipe_fd[0]);
 }
 
-static int	handle_heredoc_input(t_command *cmd, int saved_stdin,
-	int saved_stdout)
+static int	handle_heredoc_input(t_command *cmd, t_shell *shell,
+	int saved_stdin, int saved_stdout)
 {
-	cmd->input_fd = handle_heredoc(cmd);
+	cmd->input_fd = handle_heredoc(cmd, shell);
 	if (cmd->input_fd == -1)
 	{
 		if (g_signal_received)
@@ -54,14 +54,14 @@ static int	handle_heredoc_input(t_command *cmd, int saved_stdin,
 	return (1);
 }
 
-static int	handle_input_redirection(t_command *cmd, int saved_stdin,
-	int saved_stdout)
+static int	handle_input_redirection(t_command *cmd, t_shell *shell,
+	int saved_stdin, int saved_stdout)
 {
 	int	status;
 
 	if (cmd->input_fd == -2)
 	{
-		status = handle_heredoc_input(cmd, saved_stdin, saved_stdout);
+		status = handle_heredoc_input(cmd, shell, saved_stdin, saved_stdout);
 		if (status <= 0)
 			return (status);
 	}
@@ -108,7 +108,7 @@ static int	handle_output_redirection(t_command *cmd,
 	return (1);
 }
 
-int	handle_redirections(t_command *cmd)
+int	handle_redirections(t_command *cmd, t_shell *shell)
 {
 	int	saved_stdout;
 	int	saved_stdin;
@@ -120,7 +120,7 @@ int	handle_redirections(t_command *cmd)
 	while (cmd)
 	{
 		if (cmd->input_file
-			&& !handle_input_redirection(cmd, saved_stdin, saved_stdout))
+			&& !handle_input_redirection(cmd, shell, saved_stdin, saved_stdout))
 			return (0);
 		if (cmd->output_file
 			&& !handle_output_redirection(cmd, saved_stdin, saved_stdout))
