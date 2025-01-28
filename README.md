@@ -1,6 +1,7 @@
 # Minishell
 
 A simple shell implementation inspired by bash, developed as part of the 42 School curriculum.
+<img src="https://img.shields.io/badge/Grade-100%2F100-success"></img>
 
 
 ## 📝 About
